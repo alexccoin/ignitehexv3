@@ -50,7 +50,13 @@ export default defineDomain({
       navLabel: 'Portfolio',
       component: lazy(() => import('./Portfolio')),
     },
+    {
+      path: 'apps',
+      navLabel: 'Ecosystem apps',
+      component: lazy(() => import('./Apps')),
+    },
   ],
 });
 
 export * from './hooks';
+export * from './ecosystemApps';

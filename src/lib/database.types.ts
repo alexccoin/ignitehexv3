@@ -3390,6 +3390,54 @@ export type Database = {
           },
         ]
       }
+      ecosystem_apps: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          embeddable: boolean
+          icon: string | null
+          id: string
+          name: string
+          requires_role: Database["public"]["Enums"]["app_role"] | null
+          slug: string
+          sort_order: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          embeddable?: boolean
+          icon?: string | null
+          id?: string
+          name: string
+          requires_role?: Database["public"]["Enums"]["app_role"] | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          embeddable?: boolean
+          icon?: string | null
+          id?: string
+          name?: string
+          requires_role?: Database["public"]["Enums"]["app_role"] | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       email_campaign_recipients: {
         Row: {
           campaign_id: string
@@ -11492,6 +11540,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      set_ecosystem_app_active: {
+        Args: { p_active: boolean; p_slug: string }
+        Returns: Json
+      }
       set_quarantine_correction: {
         Args: {
           p_amount: number
@@ -11549,6 +11601,21 @@ export type Database = {
           transaction_type: string
         }
         Returns: boolean
+      }
+      upsert_ecosystem_app: {
+        Args: {
+          p_active?: boolean
+          p_category?: string
+          p_description?: string
+          p_embeddable?: boolean
+          p_icon?: string
+          p_name: string
+          p_requires_role?: Database["public"]["Enums"]["app_role"]
+          p_slug: string
+          p_sort_order?: number
+          p_url: string
+        }
+        Returns: Json
       }
       v2_admin_bulk_delete_requests: {
         Args: { p_ids: string[]; p_reason?: string; p_source: string }
