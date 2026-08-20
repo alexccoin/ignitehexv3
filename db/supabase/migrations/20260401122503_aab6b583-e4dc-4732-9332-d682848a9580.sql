@@ -1,0 +1,1 @@
+INSERT INTO public.starw_nodes (user_id, node_number, status, worker_nodes_count, assigned_at) VALUES ('4a4204ad-7a7d-46a6-b909-322380c0918f', 100, 'active', 0, now())

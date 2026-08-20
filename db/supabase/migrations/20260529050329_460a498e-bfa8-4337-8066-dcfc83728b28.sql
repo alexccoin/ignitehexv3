@@ -1,0 +1,1 @@
+UPDATE public.user_profiles SET status='suspended', updated_at=now() WHERE user_id IN ('33378a84-bd41-406c-88b2-9336f91c143d','a2009ffb-fc44-4a13-9b52-e8216d948fca','a36950b1-83e9-4766-93c7-cfb18add275c','c8cdfd1a-21df-4f13-bfc9-adb3eb78e43f');

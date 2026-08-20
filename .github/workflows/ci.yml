@@ -1,0 +1,196 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A second push to the same branch cancels the first. The migration replay is
+# the long job here and there is no value in finishing one for a commit that has
+# already been superseded.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ---------------------------------------------------------------- frontend
+  app:
+    name: typecheck · lint · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # npm ci when the lockfile is present, so CI installs exactly what a
+      # deploy would. If it is ever removed, fall back rather than fail — but
+      # say so loudly, because a build resolving its own dependency versions is
+      # not a reproducible build.
+      - name: Install
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo '::warning title=No lockfile::package-lock.json is absent; installed with npm install, so this build is not reproducible.'
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # Lint is not allowed to be quietly absent either: if the config is gone,
+      # that is a change someone made and it should be visible in the log.
+      - name: Lint
+        shell: bash
+        run: |
+          if compgen -G 'eslint.config.*' > /dev/null || compgen -G '.eslintrc*' > /dev/null; then
+            npm run lint
+          else
+            echo '::warning title=No lint config::no eslint config found, lint skipped'
+          fi
+
+      # The contract: if a `test` script exists it MUST pass. Absence is
+      # tolerated (the suite is being written in parallel); failure never is.
+      # `npm test --if-present` is deliberately NOT used — it swallows the
+      # distinction between "no tests" and "tests are broken" in some npm
+      # versions, and that distinction is the whole point of this step.
+      - name: Test
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.test ? 0 : 1)"; then
+            echo "test script found — failures here fail the build"
+            npm test
+          else
+            echo '::warning title=No tests::package.json has no test script; nothing was run. Tolerated only while the suite is being written.'
+          fi
+
+      # Vite inlines VITE_* at build time, so the build needs them present or it
+      # emits `undefined` and the app throws in the browser instead of here.
+      # These are placeholders and are not a backend: CI must never hold a
+      # credential for a real project, and nothing in this job makes a request.
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: 'http://ci.invalid'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'ci-placeholder-not-a-real-key'
+        run: npm run build
+
+      # A build that produced no shell, or a shell with no script tag, has
+      # "succeeded" without producing anything deployable.
+      - name: Check the bundle is real
+        run: |
+          test -f dist/index.html || { echo "dist/index.html missing"; exit 1; }
+          grep -q '<script' dist/index.html || { echo "dist/index.html has no script tag"; exit 1; }
+          echo "dist:"; du -sh dist; ls -la dist/assets | head
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  # ------------------------------------------------------- migration replay
+  #
+  # Proves the schema still builds from an empty database. PGlite is a real
+  # Postgres in WebAssembly, so this needs no Docker, no service container and
+  # no credentials — which is why it can run on every push.
+  #
+  # Only the FAILED count gates, against db/replay-baseline.json. `applied` and
+  # `data-only` are reported and do not fail the job: a data-only migration
+  # backfills rows that only ever existed in the live database, and counting
+  # that as a failure would make a healthy schema look broken.
+  schema:
+    name: migration replay (PGlite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+
+      - name: Show the baseline being enforced
+        run: cat db/replay-baseline.json
+
+      - name: Replay every migration into an empty Postgres
+        run: npm run db:replay -- --json replay-report.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: migration-replay-report
+          path: replay-report.json
+          retention-days: 30
+
+  # ------------------------------------------------------------ deploy image
+  #
+  # Builds the Dockerfile and proves the container actually serves the app,
+  # including the SPA fallback — a fallback rule that is wrong fails silently
+  # (every path returns 200) unless something checks the body.
+  #
+  # It builds only; nothing is pushed anywhere. There is no registry
+  # configured and no credential in this workflow.
+  image:
+    name: docker build · serve · SPA fallback
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: |
+          docker build \
+            --build-arg VITE_SUPABASE_URL=http://ci.invalid \
+            --build-arg VITE_SUPABASE_PUBLISHABLE_KEY=ci-placeholder-not-a-real-key \
+            -t ignitehex-v3:ci .
+
+      - name: Serve it and check what comes back
+        run: |
+          docker run -d --name ihx -p 8080:8080 ignitehex-v3:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/healthz >/dev/null 2>&1 && break
+            sleep 1
+          done
+
+          echo "--- / ---"
+          curl -fsS -o /tmp/root.html -w 'status=%{http_code}\n' http://127.0.0.1:8080/
+          grep -q '<div id="root"' /tmp/root.html
+
+          echo "--- /admin/exposure (a client route, must NOT 404) ---"
+          code=$(curl -s -o /tmp/deep.html -w '%{http_code}' http://127.0.0.1:8080/admin/exposure)
+          echo "status=$code"
+          test "$code" = "200"
+          # It must serve the SHELL, not some other file. Identical bytes to /
+          # is the check that the fallback is a rewrite and not a redirect.
+          cmp /tmp/root.html /tmp/deep.html
+
+          echo "--- a missing asset must still 404, not fall back to the shell ---"
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/assets/nope.js)
+          echo "status=$code"
+          test "$code" = "404"
+
+          # nginx drops inherited add_header from any level that sets one of its
+          # own, so the shell — the page every client route resolves to — lost
+          # all four of these the first time this was built. Nothing about the
+          # status codes changed, which is why it is asserted rather than eyeballed.
+          echo "--- security headers survive on the SPA-fallback response ---"
+          curl -sI http://127.0.0.1:8080/admin/exposure | tee /tmp/h.txt
+          for h in X-Content-Type-Options X-Frame-Options Referrer-Policy Permissions-Policy; do
+            grep -qi "^$h:" /tmp/h.txt || { echo "missing header: $h"; exit 1; }
+          done
+
+          docker rm -f ihx

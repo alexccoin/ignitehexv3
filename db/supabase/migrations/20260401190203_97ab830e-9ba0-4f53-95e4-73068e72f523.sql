@@ -1,0 +1,1 @@
+ALTER TABLE public.voucher_redemptions ALTER COLUMN deposit_address DROP NOT NULL;

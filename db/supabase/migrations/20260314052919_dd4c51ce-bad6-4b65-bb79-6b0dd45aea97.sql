@@ -1,0 +1,1 @@
+DELETE FROM security_audit_log WHERE user_id = '1881a72b-3dc2-4b62-a283-105b60dfc839';

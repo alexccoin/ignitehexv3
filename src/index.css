@@ -1,0 +1,171 @@
+/* IgniteHeX v3 design system.
+ *
+ * Three faces, not fifteen: Roboto for interface text, Outfit for display
+ * headings, JetBrains Mono for figures. Monospaced numerals matter here —
+ * balances and token amounts sit in columns, and proportional digits make them
+ * impossible to scan.
+ *
+ * Colours and proportions are taken from the Monteno theme. Its own faces are
+ * Roboto + Gilroy-Bold + Font Awesome 5 Pro; the latter two are commercial, so
+ * Outfit and lucide-react stand in for them.
+ *
+ * Every colour is an HSL triple behind a semantic name. Components never
+ * reference a hue directly, so the light and dark palettes below are the only
+ * place a colour is decided.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Derived from the Monteno theme: a deep violet stack with a hot orange
+     * accent. Hex values from the source, converted to HSL so opacity
+     * modifiers keep working. */
+    --background: 258 40% 98%;
+    --surface: 0 0% 100%;
+    --elevated: 258 30% 96%;
+    --overlay: 255 81% 12%;
+
+    --foreground: 255 60% 12%;
+    --muted-foreground: 258 20% 42%;
+
+    --border: 258 25% 89%;
+    --input: 258 25% 89%;
+    --ring: 13 98% 52%;
+
+    /* #fd562a — the theme's single accent, used for every call to action. */
+    --primary: 13 98% 52%;
+    --primary-foreground: 0 0% 100%;
+    /* #4c22e1 — the violet that carries brand surfaces and gradients. */
+    --accent: 255 76% 51%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 152 55% 34%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 85% 42%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 72% 45%;
+    --danger-foreground: 0 0% 100%;
+    --info: 214 80% 45%;
+    --info-foreground: 0 0% 100%;
+
+    --chart-1: 17 76% 50%;
+    --chart-2: 203 76% 48%;
+    --chart-3: 322 57% 57%;
+    --chart-4: 157 76% 37%;
+    --chart-5: 254 68% 62%;
+
+    --radius: 1.25rem;
+  }
+
+  .dark {
+    /* #200b6a deepened for the canvas, #4526b1 and #7153d9 for raised
+     * surfaces, #beb1de for muted text — all straight from the theme. */
+    --background: 255 62% 7%;
+    --surface: 255 48% 11%;
+    --elevated: 255 42% 16%;
+    --overlay: 255 81% 4%;
+
+    --foreground: 0 0% 100%;
+    --muted-foreground: 258 35% 78%;
+
+    --border: 255 32% 24%;
+    --input: 255 32% 24%;
+    --ring: 13 98% 58%;
+
+    --primary: 13 98% 58%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 255 70% 62%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 152 58% 50%;
+    --success-foreground: 255 62% 7%;
+    --warning: 38 92% 60%;
+    --warning-foreground: 255 62% 7%;
+    --danger: 0 84% 65%;
+    --danger-foreground: 0 0% 100%;
+    --info: 205 90% 60%;
+    --info-foreground: 255 62% 7%;
+
+    --chart-1: 17 76% 50%;
+    --chart-2: 203 76% 48%;
+    --chart-3: 322 57% 57%;
+    --chart-4: 157 76% 37%;
+    --chart-5: 254 68% 62%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  h1, h2, h3 {
+    font-family: theme('fontFamily.display');
+    letter-spacing: -0.02em;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Figures line up in columns; proportional digits make them unscannable. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-family: theme('fontFamily.mono');
+  }
+
+  /* Focus is never removed, only restyled — keyboard users need to see it. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full border-2 border-transparent bg-clip-padding;
+    background-color: hsl(var(--muted-foreground) / 0.3);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* The one card treatment. Every panel in the app uses this, which is what
+   * keeps the surface language consistent. */
+  .panel {
+    @apply rounded-xl border border-border bg-surface shadow-sm;
+  }
+
+  /* Brand wash for hero figures and the sign-in mark. */
+  .brand-gradient {
+    background-image: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--primary)));
+  }
+
+  .brand-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+}

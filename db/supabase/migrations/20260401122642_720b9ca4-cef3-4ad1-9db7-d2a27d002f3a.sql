@@ -1,0 +1,1 @@
+INSERT INTO public.supernodes (user_id, node_number, status, worker_nodes_count, assigned_by, assigned_at) VALUES ('fa237b29-55fa-42e9-bced-36e4be26a141', 3, 'active', 0, (SELECT user_id FROM user_roles WHERE role = 'admin' LIMIT 1), now())

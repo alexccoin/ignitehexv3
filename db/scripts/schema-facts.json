@@ -1,0 +1,5414 @@
+{
+  "_comment": "Schema facts captured READ-ONLY from IgniteHeX production. TypeScript types carry no DEFAULT, CHECK or precise-type information, so gen-recovered-schema.mjs reads them from here instead of inferring them. Regenerate with SBP=<token> REF=<ref> node scripts/pull-schema-facts.mjs. Do not hand-edit.",
+  "_source": {
+    "project_ref": "lhkkfrpgbkjfcrodjslf",
+    "database": "postgres",
+    "server_version": "PostgreSQL 17.6 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 13.2.0, 64-bit",
+    "captured_at": "2026-08-19 06:13:36.442918+00",
+    "captured_by": "scripts/pull-schema-facts.mjs"
+  },
+  "_stats": {
+    "gap_tables_requested": 64,
+    "gap_tables_present_in_production": 64,
+    "gap_tables_missing_from_production": [],
+    "columns_captured": 978,
+    "columns_with_default": 421,
+    "check_constraints": 67,
+    "key_constraints": 86,
+    "enum_types": 6,
+    "public_schema_columns_total": 2469,
+    "public_schema_columns_with_default": 1022
+  },
+  "enums": {
+    "account_status": [
+      "pending",
+      "approved",
+      "suspended",
+      "closed"
+    ],
+    "account_type_enum": [
+      "personal",
+      "business",
+      "corporate"
+    ],
+    "app_role": [
+      "admin",
+      "moderator",
+      "user",
+      "support",
+      "marketing",
+      "legal",
+      "arx",
+      "seed_str_admin"
+    ],
+    "pool_status": [
+      "active",
+      "paused",
+      "closed",
+      "archived"
+    ],
+    "reward_curve": [
+      "linear",
+      "tiered",
+      "exponential"
+    ],
+    "user_status": [
+      "standard",
+      "silver",
+      "gold",
+      "platinum",
+      "vip"
+    ]
+  },
+  "tables": {
+    "ai_usage_sessions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "session_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "tokens_used": {
+        "type": "numeric(18,8)",
+        "notnull": true,
+        "default": "0"
+      },
+      "compute_cost": {
+        "type": "numeric(18,8)",
+        "notnull": true,
+        "default": "0"
+      },
+      "duration_seconds": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "started_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "ended_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      }
+    },
+    "airdrop_registrations": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "email_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "wallet_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "requested_amount": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "1000"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "tokens_credited": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "credited_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "credited_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "processed_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "event_type": {
+        "type": "text",
+        "notnull": false
+      },
+      "voucher_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "voucher_type": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "arss_transactions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "transaction_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "amount": {
+        "type": "numeric(18,8)",
+        "notnull": true
+      },
+      "source_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "source_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "description": {
+        "type": "text",
+        "notnull": true
+      },
+      "transaction_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'completed'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "currency": {
+        "type": "text",
+        "notnull": false,
+        "default": "'wSTR'::text"
+      }
+    },
+    "arx_audit_trail": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "action_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "resource_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "resource_id": {
+        "type": "text",
+        "notnull": true
+      },
+      "performed_by": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "changes": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "attestation_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "timestamp": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "arx_club_members": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "membership_tier": {
+        "type": "text",
+        "notnull": true,
+        "default": "'standard'::text"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "joined_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "expires_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "benefits": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "governance_role": {
+        "type": "text",
+        "notnull": false,
+        "default": "'member'::text"
+      },
+      "council_member": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "executive_board": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "voting_weight": {
+        "type": "integer",
+        "notnull": false,
+        "default": "1"
+      },
+      "node_operator": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "kyc_status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'pending'::text"
+      },
+      "kyc_verified_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "wnft_credential": {
+        "type": "text",
+        "notnull": false
+      },
+      "activation_hash": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "arx_treasury_transactions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "pool_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "transaction_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "usd_equivalent": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "oracle_rate": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "initiated_by": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "multisig_approval_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "required_signatures": {
+        "type": "integer",
+        "notnull": true
+      },
+      "collected_signatures": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'[]'::jsonb"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "executed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "attestation_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "auth_attempts": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "attempt_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "success": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "additional_data": {
+        "type": "jsonb",
+        "notnull": false
+      }
+    },
+    "capacity_sharing": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "sharing_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "capacity_amount": {
+        "type": "numeric(10,2)",
+        "notnull": true
+      },
+      "capacity_unit": {
+        "type": "text",
+        "notnull": true
+      },
+      "hourly_rate": {
+        "type": "numeric(18,8)",
+        "notnull": true
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'available'::text"
+      },
+      "total_hours_shared": {
+        "type": "numeric(10,2)",
+        "notnull": false,
+        "default": "0"
+      },
+      "total_earned": {
+        "type": "numeric(18,8)",
+        "notnull": false,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "ccoin_bank_applications": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "email": {
+        "type": "text",
+        "notnull": true
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "gdpr_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "gdpr_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "terms_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "terms_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "nda_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "nda_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "signature_full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "signature_date": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "processed_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "application_metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "account_type": {
+        "type": "text",
+        "notnull": false,
+        "default": "'personal'::text"
+      },
+      "company_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "company_registration_number": {
+        "type": "text",
+        "notnull": false
+      },
+      "requested_products": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{\"iban_chf\": false, \"iban_eur\": false, \"iban_gbp\": false, \"visa_card\": false, \"ccoin_card\": false}'::jsonb"
+      }
+    },
+    "ccoin_banking_profiles": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "email_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "str_domain": {
+        "type": "text",
+        "notnull": false
+      },
+      "str_wallet_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "preferred_iban_currencies": {
+        "type": "text[]",
+        "notnull": false,
+        "default": "ARRAY['EUR'::text, 'CHF'::text, 'GBP'::text]"
+      },
+      "default_iban_country": {
+        "type": "text",
+        "notnull": false,
+        "default": "'CH'::text"
+      },
+      "card_networks_enabled": {
+        "type": "text[]",
+        "notnull": false,
+        "default": "ARRAY['ccoin'::text, 'visa'::text]"
+      },
+      "eur_iban_created": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "chf_iban_created": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "gbp_iban_created": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "ccoin_card_created": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "visa_card_created": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "eur_iban_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "chf_iban_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "gbp_iban_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "ccoin_card_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "visa_card_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "kyc_status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'pending'::text"
+      },
+      "banking_status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'active'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "last_banking_sync": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "account_type": {
+        "type": "text",
+        "notnull": false,
+        "default": "'personal'::text"
+      },
+      "company_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "company_registration_number": {
+        "type": "text",
+        "notnull": false
+      },
+      "tax_id": {
+        "type": "text",
+        "notnull": false
+      },
+      "business_type": {
+        "type": "text",
+        "notnull": false
+      },
+      "business_address": {
+        "type": "jsonb",
+        "notnull": false
+      },
+      "authorized_signatories": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'[]'::jsonb"
+      },
+      "corporate_structure": {
+        "type": "jsonb",
+        "notnull": false
+      }
+    },
+    "ccoin_validations": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "card_identifier": {
+        "type": "text",
+        "notnull": true
+      },
+      "result": {
+        "type": "text",
+        "notnull": true
+      },
+      "details": {
+        "type": "jsonb",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "crypto_wallets": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "token_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "available_balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "held_balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "currency_exchanges": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "from_currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "to_currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "from_amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "to_amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "exchange_rate": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "fee_amount": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "rail": {
+        "type": "text",
+        "notnull": false
+      },
+      "fee_ccos": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "fee_ledger_id": {
+        "type": "uuid",
+        "notnull": false
+      }
+    },
+    "domain_marketplace_bids": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "listing_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "bidder_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "bid_amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "is_winning_bid": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true,
+        "default": "'USD'::text"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      }
+    },
+    "domain_marketplace_listings": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "domain_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "seller_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "domain_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "domain_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "listing_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "buy_now_price": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "starting_bid": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "reserve_price": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "current_bid": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "current_bidder_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "auction_end_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "description": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "views_count": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true,
+        "default": "'USD'::text"
+      },
+      "seller_wallet_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "seller_wallet_currency": {
+        "type": "text",
+        "notnull": false
+      },
+      "accepted_bid_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "is_admin_listing": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "seller_eth_wallet": {
+        "type": "text",
+        "notnull": false
+      },
+      "reserved_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "reserved_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "reservation_expires_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "category": {
+        "type": "text",
+        "notnull": false
+      },
+      "image_url": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "domain_marketplace_transactions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "listing_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "domain_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "seller_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "buyer_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "sale_price": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "sale_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "transaction_fee": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "completed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true,
+        "default": "'USD'::text"
+      },
+      "escrow_status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "payment_proof_url": {
+        "type": "text",
+        "notnull": false
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "admin_approved_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "admin_approved_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "released_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "buyer_wallet_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "transaction_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "expires_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      }
+    },
+    "enhanced_rate_limits": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "identifier": {
+        "type": "text",
+        "notnull": true
+      },
+      "operation_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "attempts": {
+        "type": "integer",
+        "notnull": true,
+        "default": "1"
+      },
+      "window_start": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "last_attempt": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "blocked_until": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "enhanced_staking_pools": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "name": {
+        "type": "text",
+        "notnull": true
+      },
+      "duration_months": {
+        "type": "integer",
+        "notnull": true
+      },
+      "apr_min": {
+        "type": "numeric(5,2)",
+        "notnull": true
+      },
+      "apr_max": {
+        "type": "numeric(5,2)",
+        "notnull": true
+      },
+      "theme": {
+        "type": "text",
+        "notnull": true
+      },
+      "tvl_cap": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "start_date": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "end_date": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "status": {
+        "type": "pool_status",
+        "notnull": false,
+        "default": "'active'::pool_status"
+      },
+      "reward_curve": {
+        "type": "reward_curve",
+        "notnull": false,
+        "default": "'linear'::reward_curve"
+      },
+      "compounding": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "whitelist_only": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "min_stake_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "1000"
+      },
+      "max_stake_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "10000000"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "token_type": {
+        "type": "text",
+        "notnull": true,
+        "default": "'str'::text"
+      },
+      "description": {
+        "type": "text",
+        "notnull": false
+      },
+      "icon": {
+        "type": "text",
+        "notnull": false,
+        "default": "'zap'::text"
+      }
+    },
+    "fiat_transactions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "tx_id": {
+        "type": "text",
+        "notnull": true
+      },
+      "from_user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "to_user_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "from_identifier": {
+        "type": "text",
+        "notnull": true
+      },
+      "to_identifier": {
+        "type": "text",
+        "notnull": true
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "fee": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "transfer_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "requires_approval": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "approved_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "approved_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "completed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      }
+    },
+    "fiat_wallets": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "available_balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "held_balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "github_integrations": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "github_username": {
+        "type": "text",
+        "notnull": true
+      },
+      "repo_count": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "last_sync": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "integration_status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "encrypted_access_token": {
+        "type": "text",
+        "notnull": false
+      },
+      "token_encryption_iv": {
+        "type": "text",
+        "notnull": false
+      },
+      "is_token_encrypted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "true"
+      },
+      "encryption_version": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      }
+    },
+    "governance_proposals": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "title": {
+        "type": "text",
+        "notnull": true
+      },
+      "description": {
+        "type": "text",
+        "notnull": true
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "vote_count": {
+        "type": "integer",
+        "notnull": true,
+        "default": "0"
+      },
+      "support_votes": {
+        "type": "integer",
+        "notnull": true,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "voting_ends_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "(now() + '72:00:00'::interval)"
+      }
+    },
+    "guardian_flash_alerts": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "asset_symbol": {
+        "type": "text",
+        "notnull": true
+      },
+      "alert_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "severity": {
+        "type": "text",
+        "notnull": true,
+        "default": "'medium'::text"
+      },
+      "title": {
+        "type": "text",
+        "notnull": true
+      },
+      "description": {
+        "type": "text",
+        "notnull": false
+      },
+      "market_price": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "trigger_price": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "action_taken": {
+        "type": "text",
+        "notnull": false
+      },
+      "acted_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "acted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "guardian_invitations": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "invited_email": {
+        "type": "text",
+        "notnull": false
+      },
+      "invited_str_domain": {
+        "type": "text",
+        "notnull": false
+      },
+      "invited_by": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "accepted_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "expires_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "(now() + '30 days'::interval)"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "guardian_wallets": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "asset_symbol": {
+        "type": "text",
+        "notnull": true
+      },
+      "asset_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "network": {
+        "type": "text",
+        "notnull": true
+      },
+      "wallet_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "external_balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "usd_value": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "icon_color": {
+        "type": "text",
+        "notnull": false,
+        "default": "'#F7931A'::text"
+      },
+      "is_active": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "true"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "deposit_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "user_external_address": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "iban_accounts": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "iban": {
+        "type": "text",
+        "notnull": true
+      },
+      "bic": {
+        "type": "text",
+        "notnull": true
+      },
+      "account_holder": {
+        "type": "text",
+        "notnull": true
+      },
+      "account_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "country_code": {
+        "type": "text",
+        "notnull": true
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "balance": {
+        "type": "numeric(18,8)",
+        "notnull": false,
+        "default": "0"
+      },
+      "status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'active'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "encrypted_iban": {
+        "type": "text",
+        "notnull": false
+      },
+      "encrypted_bic": {
+        "type": "text",
+        "notnull": false
+      },
+      "iban_encryption_iv": {
+        "type": "text",
+        "notnull": false
+      },
+      "is_data_encrypted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "true"
+      },
+      "merchant_account": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "pos_enabled": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "account_category": {
+        "type": "text",
+        "notnull": false,
+        "default": "'personal'::text"
+      },
+      "encryption_version": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "legacy_iban": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "ipo_listing_requests": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "email": {
+        "type": "text",
+        "notnull": true
+      },
+      "address": {
+        "type": "text",
+        "notnull": false
+      },
+      "share_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "number_of_shares": {
+        "type": "integer",
+        "notnull": true
+      },
+      "price_per_share": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "91.3"
+      },
+      "total_usd_value": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "receiving_currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "iban": {
+        "type": "text",
+        "notnull": true
+      },
+      "bank_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "bank_swift": {
+        "type": "text",
+        "notnull": true
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "processed_by": {
+        "type": "text",
+        "notnull": false
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "phone": {
+        "type": "text",
+        "notnull": false
+      },
+      "admin_message": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "learning_contributions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "contribution_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "title": {
+        "type": "text",
+        "notnull": true
+      },
+      "description": {
+        "type": "text",
+        "notnull": false
+      },
+      "content_url": {
+        "type": "text",
+        "notnull": false
+      },
+      "content_text": {
+        "type": "text",
+        "notnull": false
+      },
+      "tags": {
+        "type": "text[]",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "arss_reward": {
+        "type": "numeric(18,8)",
+        "notnull": false,
+        "default": "0"
+      },
+      "quality_score": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "liquidity_pools": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "pool_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "pool_symbol": {
+        "type": "text",
+        "notnull": true
+      },
+      "total_liquidity": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "apy_rate": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "pool_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "description": {
+        "type": "text",
+        "notnull": false
+      },
+      "is_active": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "true"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "liquidity_transactions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "pool_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "transaction_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "transaction_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "member_support_tickets": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "user_email": {
+        "type": "text",
+        "notnull": true
+      },
+      "user_phone": {
+        "type": "text",
+        "notnull": false
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "str_domain": {
+        "type": "text",
+        "notnull": false
+      },
+      "category": {
+        "type": "text",
+        "notnull": true
+      },
+      "error_details": {
+        "type": "text",
+        "notnull": true
+      },
+      "severity": {
+        "type": "text",
+        "notnull": true,
+        "default": "'medium'::text"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "resolution_time_hours": {
+        "type": "integer",
+        "notnull": false,
+        "default": "72"
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "resolved_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "resolved_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "merchant_business_ibans": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "merchant_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "iban": {
+        "type": "text",
+        "notnull": true
+      },
+      "bic": {
+        "type": "text",
+        "notnull": true
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "account_holder": {
+        "type": "text",
+        "notnull": true
+      },
+      "balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "is_encrypted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      }
+    },
+    "merchant_products": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "merchant_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "product_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "description": {
+        "type": "text",
+        "notnull": false
+      },
+      "price": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "price_currency": {
+        "type": "text",
+        "notnull": true,
+        "default": "'EUR'::text"
+      },
+      "crypto_price": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "crypto_currency": {
+        "type": "text",
+        "notnull": false
+      },
+      "category": {
+        "type": "text",
+        "notnull": false
+      },
+      "image_url": {
+        "type": "text",
+        "notnull": false
+      },
+      "stock_quantity": {
+        "type": "integer",
+        "notnull": false
+      },
+      "is_digital": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "is_active": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "true"
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "pending_balance_locks": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "token_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "locked_amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "transaction_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "expires_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "(now() + '00:05:00'::interval)"
+      }
+    },
+    "pending_profile_changes": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "requested_changes": {
+        "type": "jsonb",
+        "notnull": true
+      },
+      "change_reason": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "confirmation_token": {
+        "type": "text",
+        "notnull": false
+      },
+      "token_expires_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "reviewed_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "reviewed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "praeco_peers": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "node_id": {
+        "type": "text",
+        "notnull": true
+      },
+      "user_id": {
+        "type": "text",
+        "notnull": true
+      },
+      "node_type": {
+        "type": "text",
+        "notnull": true,
+        "default": "'light'::text"
+      },
+      "address": {
+        "type": "text",
+        "notnull": true
+      },
+      "port": {
+        "type": "integer",
+        "notnull": false,
+        "default": "33100"
+      },
+      "last_seen": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "is_online": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "true"
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      }
+    },
+    "prepaid_cards": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "card_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "currency": {
+        "type": "text",
+        "notnull": true
+      },
+      "balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "card_last4": {
+        "type": "text",
+        "notnull": true
+      },
+      "masked_card": {
+        "type": "text",
+        "notnull": true
+      },
+      "issuer": {
+        "type": "text",
+        "notnull": false,
+        "default": "'ARESfin'::text"
+      },
+      "expiry_date": {
+        "type": "date",
+        "notnull": false
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "network": {
+        "type": "text",
+        "notnull": true,
+        "default": "'visa'::text"
+      },
+      "bin": {
+        "type": "text",
+        "notnull": false
+      },
+      "domain_part": {
+        "type": "text",
+        "notnull": false
+      },
+      "wallet_suffix": {
+        "type": "text",
+        "notnull": false
+      },
+      "full_identifier": {
+        "type": "text",
+        "notnull": false
+      },
+      "pan_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "card_status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'active'::text"
+      },
+      "physical_card": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "shipping_status": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "private_seed_str_applications": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "email": {
+        "type": "text",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "investment_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "investment_tier": {
+        "type": "text",
+        "notnull": false
+      },
+      "str_backing_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "expected_return_rate": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "lock_period_months": {
+        "type": "integer",
+        "notnull": false,
+        "default": "12"
+      },
+      "terms_accepted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "terms_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "nda_accepted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "nda_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "gdpr_accepted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "gdpr_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "risk_disclosure_accepted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "risk_disclosure_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'pending'::text"
+      },
+      "payment_status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'awaiting_payment'::text"
+      },
+      "payment_deadline": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "payment_submitted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "payment_crypto": {
+        "type": "text",
+        "notnull": false
+      },
+      "payment_amount": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "payment_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "str_shares_credited": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "credited_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "credited_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "processed_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "suspended_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "suspended_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "suspension_reason": {
+        "type": "text",
+        "notnull": false
+      },
+      "cancelled_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "cancelled_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "application_date": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false,
+        "default": "'0.0.0.0'::inet"
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "acknowledgment_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "street_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "city": {
+        "type": "text",
+        "notnull": false
+      },
+      "state_province": {
+        "type": "text",
+        "notnull": false
+      },
+      "postal_code": {
+        "type": "text",
+        "notnull": false
+      },
+      "country": {
+        "type": "text",
+        "notnull": false
+      },
+      "presented_by": {
+        "type": "text",
+        "notnull": false
+      },
+      "purpose_of_report": {
+        "type": "text",
+        "notnull": false
+      },
+      "signature_first_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "signature_last_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "signature_date": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "phone": {
+        "type": "text",
+        "notnull": false
+      },
+      "location_city": {
+        "type": "text",
+        "notnull": false
+      },
+      "location_country": {
+        "type": "text",
+        "notnull": false
+      },
+      "device_type": {
+        "type": "text",
+        "notnull": false
+      },
+      "browser": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "private_seed_str_audit_log": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "application_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "action_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "action_details": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "performed_by": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      }
+    },
+    "profile_changes": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "changed_by": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "field_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "old_value": {
+        "type": "text",
+        "notnull": false
+      },
+      "new_value": {
+        "type": "text",
+        "notnull": false
+      },
+      "change_reason": {
+        "type": "text",
+        "notnull": false
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "profiles": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "email": {
+        "type": "text",
+        "notnull": true
+      },
+      "role": {
+        "type": "text",
+        "notnull": true,
+        "default": "'user'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "safe_admins": {
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "granted_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "safe_purchases": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "email": {
+        "type": "text",
+        "notnull": true
+      },
+      "phone": {
+        "type": "text",
+        "notnull": true
+      },
+      "address": {
+        "type": "text",
+        "notnull": true
+      },
+      "shares": {
+        "type": "integer",
+        "notnull": true
+      },
+      "bonus_pct": {
+        "type": "numeric(5,2)",
+        "notnull": true,
+        "default": "0"
+      },
+      "bonus_shares": {
+        "type": "integer",
+        "notnull": true,
+        "default": "0"
+      },
+      "total_shares": {
+        "type": "integer",
+        "notnull": true
+      },
+      "price_per_share_usd": {
+        "type": "numeric(12,2)",
+        "notnull": true,
+        "default": "20"
+      },
+      "total_usd": {
+        "type": "numeric(14,2)",
+        "notnull": true
+      },
+      "crypto": {
+        "type": "text",
+        "notnull": true
+      },
+      "tx_hash": {
+        "type": "text",
+        "notnull": true
+      },
+      "pep_declared": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "presenter_full_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "presenter_email": {
+        "type": "text",
+        "notnull": false
+      },
+      "presenter_phone": {
+        "type": "text",
+        "notnull": false
+      },
+      "presenter_ref": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "credited_shares": {
+        "type": "integer",
+        "notnull": false
+      },
+      "credited_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "credited_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "security_audit_log": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "action": {
+        "type": "text",
+        "notnull": true
+      },
+      "resource_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "resource_id": {
+        "type": "text",
+        "notnull": false
+      },
+      "details": {
+        "type": "jsonb",
+        "notnull": false
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      }
+    },
+    "seed_str_affiliates": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "affiliate_code": {
+        "type": "text",
+        "notnull": true
+      },
+      "str_domain": {
+        "type": "text",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "email": {
+        "type": "text",
+        "notnull": true
+      },
+      "total_referrals": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "total_conversions": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "total_investment_referred": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'active'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "usdt_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "usdt_network": {
+        "type": "text",
+        "notnull": false
+      },
+      "usdc_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "usdc_network": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "seed_str_applications": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "email": {
+        "type": "text",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "investment_amount": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "investment_currency": {
+        "type": "text",
+        "notnull": true,
+        "default": "'STR'::text"
+      },
+      "investment_tier": {
+        "type": "text",
+        "notnull": true,
+        "default": "'standard'::text"
+      },
+      "str_backing_amount": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "expected_return_rate": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "lock_period_months": {
+        "type": "integer",
+        "notnull": true,
+        "default": "12"
+      },
+      "terms_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "terms_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "nda_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "nda_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "gdpr_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "gdpr_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "risk_disclosure_accepted": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "risk_disclosure_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "application_date": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "processed_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "credited_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "credited_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "suspended_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "suspended_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "suspension_reason": {
+        "type": "text",
+        "notnull": false
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "payment_deadline": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "payment_status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'awaiting_payment'::text"
+      },
+      "payment_submitted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "payment_verified_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "payment_verified_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "payment_crypto": {
+        "type": "text",
+        "notnull": false
+      },
+      "payment_amount": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "payment_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "str_shares_credited": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "cancelled_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "cancelled_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "affiliate_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "affiliate_email": {
+        "type": "text",
+        "notnull": false
+      },
+      "affiliate_id": {
+        "type": "uuid",
+        "notnull": false
+      }
+    },
+    "seed_str_audit_log": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "application_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "action_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "action_details": {
+        "type": "jsonb",
+        "notnull": false
+      },
+      "performed_by": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "user_agent": {
+        "type": "text",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "staking_data_cache": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "cache_key": {
+        "type": "text",
+        "notnull": true
+      },
+      "data": {
+        "type": "jsonb",
+        "notnull": true
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      }
+    },
+    "staking_requests": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "pool_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "request_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "domain_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "description": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "approved_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "requested_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "transaction_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "str_domain_username": {
+        "type": "text",
+        "notnull": false
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": false
+      },
+      "str_domain_owned": {
+        "type": "text",
+        "notnull": false
+      },
+      "duration_months": {
+        "type": "integer",
+        "notnull": true
+      }
+    },
+    "staking_rewards_distribution": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "pool_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "stake_amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "calculated_apy": {
+        "type": "numeric(5,2)",
+        "notnull": true
+      },
+      "estimated_reward": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "network_efficiency": {
+        "type": "numeric(3,2)",
+        "notnull": false,
+        "default": "1.0"
+      },
+      "distribution_date": {
+        "type": "date",
+        "notnull": false,
+        "default": "CURRENT_DATE"
+      },
+      "status": {
+        "type": "text",
+        "notnull": false,
+        "default": "'pending'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      }
+    },
+    "str_domain_connections": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "domain_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "connection_status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "api_key": {
+        "type": "text",
+        "notnull": false
+      },
+      "last_sync": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "str_domains": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "domain_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "domain_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "minted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "approved_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "approved_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "is_from_str_dome": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "domains_count": {
+        "type": "integer",
+        "notnull": false,
+        "default": "1"
+      },
+      "is_main_domain": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "str_dome_purchase_date": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "str_dome_transaction_id": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "str_dome_requests": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "str_dome_username": {
+        "type": "text",
+        "notnull": true
+      },
+      "account_email": {
+        "type": "text",
+        "notnull": true
+      },
+      "delivery_email": {
+        "type": "text",
+        "notnull": false
+      },
+      "esim_country": {
+        "type": "text",
+        "notnull": true
+      },
+      "package_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "package_price_usd": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "reviewed_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "reviewed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "deliver_to_wallet": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "esim_file_path": {
+        "type": "text",
+        "notnull": false
+      }
+    },
+    "user_liquidity_positions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "pool_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "amount_deposited": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "share_percentage": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "rewards_earned": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "user_messages": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "sender_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "recipient_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "subject": {
+        "type": "text",
+        "notnull": true
+      },
+      "message": {
+        "type": "text",
+        "notnull": true
+      },
+      "message_type": {
+        "type": "text",
+        "notnull": true,
+        "default": "'info'::text"
+      },
+      "is_read": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "is_popup_shown": {
+        "type": "boolean",
+        "notnull": true,
+        "default": "false"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "read_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      }
+    },
+    "user_profiles": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "address": {
+        "type": "text",
+        "notnull": true
+      },
+      "city": {
+        "type": "text",
+        "notnull": true
+      },
+      "country": {
+        "type": "text",
+        "notnull": true
+      },
+      "postal_code": {
+        "type": "text",
+        "notnull": true
+      },
+      "email_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "str_domain_owned": {
+        "type": "text",
+        "notnull": true
+      },
+      "str_domain_username": {
+        "type": "text",
+        "notnull": true
+      },
+      "bsc_wallet_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "btc_wallet_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "ccoin_visa_card": {
+        "type": "text",
+        "notnull": false,
+        "default": "'not connected/pending'::text"
+      },
+      "ccoin_offshore_account_usd": {
+        "type": "text",
+        "notnull": false,
+        "default": "'not connected/pending'::text"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "status": {
+        "type": "account_status",
+        "notnull": false,
+        "default": "'pending'::account_status"
+      },
+      "user_status": {
+        "type": "user_status",
+        "notnull": false,
+        "default": "'standard'::user_status"
+      },
+      "str_wallet_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "wallet_recovery_words": {
+        "type": "text[]",
+        "notnull": false
+      },
+      "wallet_pin_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "wallet_setup_completed": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "wallet_created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "recovery_words_encrypted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "true"
+      },
+      "recovery_words_iv": {
+        "type": "text",
+        "notnull": false
+      },
+      "two_factor_enabled": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "two_factor_secret": {
+        "type": "text",
+        "notnull": false
+      },
+      "backup_codes": {
+        "type": "text[]",
+        "notnull": false
+      },
+      "device_fingerprints": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'[]'::jsonb"
+      },
+      "referral_code": {
+        "type": "text",
+        "notnull": false,
+        "default": "SUBSTRING(md5(((random())::text || (gen_random_uuid())::text)) FROM 1 FOR 8)"
+      },
+      "referred_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "airdrop_applications_count": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "last_airdrop_application_date": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "recovery_words_shown": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "ip_address": {
+        "type": "inet",
+        "notnull": false
+      },
+      "region": {
+        "type": "text",
+        "notnull": false
+      },
+      "encryption_version": {
+        "type": "integer",
+        "notnull": false,
+        "default": "0"
+      },
+      "account_status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "suspended_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "suspension_reason": {
+        "type": "text",
+        "notnull": false
+      },
+      "closed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "closure_reason": {
+        "type": "text",
+        "notnull": false
+      },
+      "profile_update_status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'not_submitted'::text"
+      },
+      "investor_classification": {
+        "type": "text",
+        "notnull": false
+      },
+      "source_of_funds": {
+        "type": "text",
+        "notnull": false
+      },
+      "source_of_wealth": {
+        "type": "text",
+        "notnull": false
+      },
+      "expected_monthly_volume_eur": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "crypto_experience_level": {
+        "type": "text",
+        "notnull": false
+      },
+      "risk_acknowledged": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "is_pep": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "sanctions_declaration": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "tax_residency_country": {
+        "type": "text",
+        "notnull": false
+      },
+      "tax_identification_number": {
+        "type": "text",
+        "notnull": false
+      },
+      "mica_terms_accepted": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "mica_terms_version": {
+        "type": "text",
+        "notnull": false
+      },
+      "mica_terms_accepted_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "mica_approved_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "mica_profile_source_id": {
+        "type": "uuid",
+        "notnull": false
+      }
+    },
+    "user_roles": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "role": {
+        "type": "app_role",
+        "notnull": true
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "created_by": {
+        "type": "uuid",
+        "notnull": false
+      }
+    },
+    "user_staking_pools": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "pool_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "balance": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "staked_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "rewards_earned": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "apy_rate": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "last_reward_date": {
+        "type": "date",
+        "notnull": false
+      },
+      "enhanced_pool_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "stake_duration_months": {
+        "type": "integer",
+        "notnull": false,
+        "default": "3"
+      },
+      "lock_end_date": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "network_efficiency": {
+        "type": "numeric(3,2)",
+        "notnull": false,
+        "default": "1.0"
+      },
+      "is_enhanced_pool": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "dynamic_apy": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "original_stake_amount": {
+        "type": "numeric",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "declined_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "declined_by": {
+        "type": "uuid",
+        "notnull": false
+      }
+    },
+    "user_str_shares": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "locked_balance": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "vesting_end_date": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "source_application_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "wnft_shares": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      }
+    },
+    "user_wallets": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "wallet_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "arss_balance": {
+        "type": "numeric(18,8)",
+        "notnull": true,
+        "default": "0"
+      },
+      "total_earned": {
+        "type": "numeric(18,8)",
+        "notnull": true,
+        "default": "0"
+      },
+      "total_spent": {
+        "type": "numeric(18,8)",
+        "notnull": true,
+        "default": "0"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "vesting_tokens": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "token_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "amount": {
+        "type": "numeric",
+        "notnull": true,
+        "default": "0"
+      },
+      "vesting_start_date": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "vesting_end_date": {
+        "type": "timestamp with time zone",
+        "notnull": true
+      },
+      "vesting_months": {
+        "type": "integer",
+        "notnull": true,
+        "default": "6"
+      },
+      "source": {
+        "type": "text",
+        "notnull": true,
+        "default": "'voucher'::text"
+      },
+      "source_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'vesting'::text"
+      },
+      "released_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "released_to_staking_pool_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      }
+    },
+    "vip_users": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "vip_status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'active'::text"
+      },
+      "qualification_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "total_str_staked": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "total_domains_staked": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "qualified_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "last_checked": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": false,
+        "default": "now()"
+      }
+    },
+    "voucher_redemptions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "user_id": {
+        "type": "uuid",
+        "notnull": true
+      },
+      "token_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "str_dome_username": {
+        "type": "text",
+        "notnull": true
+      },
+      "str_dome_email": {
+        "type": "text",
+        "notnull": true
+      },
+      "full_name": {
+        "type": "text",
+        "notnull": true
+      },
+      "email_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "package_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "deposit_address": {
+        "type": "text",
+        "notnull": false
+      },
+      "payment_type": {
+        "type": "text",
+        "notnull": true
+      },
+      "payment_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "proof_of_payment_url": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "admin_notes": {
+        "type": "text",
+        "notnull": false
+      },
+      "processed_by": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "processed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "confirmation_number": {
+        "type": "text",
+        "notnull": false
+      },
+      "amount": {
+        "type": "text",
+        "notnull": false
+      },
+      "tokens_credited": {
+        "type": "boolean",
+        "notnull": false,
+        "default": "false"
+      },
+      "credited_amount": {
+        "type": "numeric",
+        "notnull": false,
+        "default": "0"
+      },
+      "credited_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      }
+    },
+    "wallet_transactions": {
+      "id": {
+        "type": "uuid",
+        "notnull": true,
+        "default": "gen_random_uuid()"
+      },
+      "from_user_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "to_user_id": {
+        "type": "uuid",
+        "notnull": false
+      },
+      "from_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "to_address": {
+        "type": "text",
+        "notnull": true
+      },
+      "amount": {
+        "type": "numeric",
+        "notnull": true
+      },
+      "token_type": {
+        "type": "text",
+        "notnull": true,
+        "default": "'str'::text"
+      },
+      "transaction_hash": {
+        "type": "text",
+        "notnull": false
+      },
+      "status": {
+        "type": "text",
+        "notnull": true,
+        "default": "'pending'::text"
+      },
+      "failure_reason": {
+        "type": "text",
+        "notnull": false
+      },
+      "metadata": {
+        "type": "jsonb",
+        "notnull": false,
+        "default": "'{}'::jsonb"
+      },
+      "created_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "updated_at": {
+        "type": "timestamp with time zone",
+        "notnull": true,
+        "default": "now()"
+      },
+      "completed_at": {
+        "type": "timestamp with time zone",
+        "notnull": false
+      }
+    }
+  },
+  "checks": {
+    "airdrop_registrations": [
+      {
+        "name": "airdrop_registrations_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))"
+      }
+    ],
+    "ccoin_bank_applications": [
+      {
+        "name": "ccoin_bank_applications_account_type_check",
+        "def": "CHECK ((account_type = ANY (ARRAY['personal'::text, 'business'::text, 'corporate'::text])))"
+      }
+    ],
+    "ccoin_banking_profiles": [
+      {
+        "name": "ccoin_banking_profiles_account_type_check",
+        "def": "CHECK ((account_type = ANY (ARRAY['personal'::text, 'business'::text, 'corporate'::text])))"
+      }
+    ],
+    "crypto_wallets": [
+      {
+        "name": "crypto_wallets_available_balance_check",
+        "def": "CHECK ((available_balance >= (0)::numeric))"
+      },
+      {
+        "name": "crypto_wallets_balance_check",
+        "def": "CHECK ((balance >= (0)::numeric))"
+      },
+      {
+        "name": "crypto_wallets_held_balance_check",
+        "def": "CHECK ((held_balance >= (0)::numeric))"
+      },
+      {
+        "name": "crypto_wallets_token_type_check",
+        "def": "CHECK ((token_type = ANY (ARRAY['CCOS'::text, 'STARW'::text, 'ARSS'::text, 'HEX'::text])))"
+      }
+    ],
+    "domain_marketplace_bids": [
+      {
+        "name": "domain_marketplace_bids_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text, 'outbid'::text, 'expired'::text])))"
+      }
+    ],
+    "domain_marketplace_listings": [
+      {
+        "name": "domain_marketplace_listings_domain_type_check",
+        "def": "CHECK ((domain_type = ANY (ARRAY['standard'::text, 'premium'::text, 'business'::text, 'brand'::text])))"
+      },
+      {
+        "name": "domain_marketplace_listings_listing_type_check",
+        "def": "CHECK ((listing_type = ANY (ARRAY['buy_now'::text, 'auction'::text, 'both'::text])))"
+      },
+      {
+        "name": "domain_marketplace_listings_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['active'::text, 'pending_payment'::text, 'reserved'::text, 'sold'::text, 'cancelled'::text, 'suspended'::text])))"
+      }
+    ],
+    "domain_marketplace_transactions": [
+      {
+        "name": "domain_marketplace_transactions_escrow_status_check",
+        "def": "CHECK ((escrow_status = ANY (ARRAY['pending'::text, 'payment_received'::text, 'admin_approved'::text, 'released'::text, 'disputed'::text, 'refunded'::text])))"
+      },
+      {
+        "name": "domain_marketplace_transactions_sale_type_check",
+        "def": "CHECK ((sale_type = ANY (ARRAY['buy_now'::text, 'auction'::text])))"
+      },
+      {
+        "name": "domain_marketplace_transactions_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'completed'::text, 'cancelled'::text, 'refunded'::text])))"
+      }
+    ],
+    "fiat_transactions": [
+      {
+        "name": "fiat_transactions_amount_check",
+        "def": "CHECK ((amount > (0)::numeric))"
+      },
+      {
+        "name": "fiat_transactions_currency_check",
+        "def": "CHECK ((currency = ANY (ARRAY['EUR'::text, 'CHF'::text, 'GBP'::text, 'USD'::text])))"
+      },
+      {
+        "name": "fiat_transactions_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text, 'escrowed'::text, 'released'::text, 'cancelled'::text])))"
+      },
+      {
+        "name": "fiat_transactions_transfer_type_check",
+        "def": "CHECK ((transfer_type = ANY (ARRAY['network'::text, 'account'::text, 'email'::text, 'sepa'::text, 'uk_payment'::text, 'wire'::text, 'swift'::text])))"
+      }
+    ],
+    "fiat_wallets": [
+      {
+        "name": "fiat_wallets_available_balance_check",
+        "def": "CHECK ((available_balance >= (0)::numeric))"
+      },
+      {
+        "name": "fiat_wallets_balance_check",
+        "def": "CHECK ((balance >= (0)::numeric))"
+      },
+      {
+        "name": "fiat_wallets_currency_check",
+        "def": "CHECK ((currency = ANY (ARRAY['EUR'::text, 'CHF'::text, 'GBP'::text, 'USD'::text])))"
+      },
+      {
+        "name": "fiat_wallets_held_balance_check",
+        "def": "CHECK ((held_balance >= (0)::numeric))"
+      }
+    ],
+    "governance_proposals": [
+      {
+        "name": "governance_proposals_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))"
+      }
+    ],
+    "guardian_flash_alerts": [
+      {
+        "name": "guardian_flash_alerts_alert_type_check",
+        "def": "CHECK ((alert_type = ANY (ARRAY['crash_warning'::text, 'flash_sell'::text, 'flash_buy'::text, 'margin_breach'::text, 'liquidity_warning'::text])))"
+      },
+      {
+        "name": "guardian_flash_alerts_severity_check",
+        "def": "CHECK ((severity = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text, 'critical'::text])))"
+      },
+      {
+        "name": "guardian_flash_alerts_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['active'::text, 'acknowledged'::text, 'resolved'::text, 'dismissed'::text])))"
+      }
+    ],
+    "guardian_invitations": [
+      {
+        "name": "guardian_invitations_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'expired'::text, 'revoked'::text])))"
+      },
+      {
+        "name": "invitation_target",
+        "def": "CHECK (((invited_email IS NOT NULL) OR (invited_str_domain IS NOT NULL)))"
+      }
+    ],
+    "iban_accounts": [
+      {
+        "name": "iban_accounts_account_category_check",
+        "def": "CHECK ((account_category = ANY (ARRAY['personal'::text, 'business'::text, 'corporate'::text])))"
+      },
+      {
+        "name": "iban_accounts_user_id_check",
+        "def": "CHECK ((user_id IS NOT NULL))"
+      }
+    ],
+    "ipo_listing_requests": [
+      {
+        "name": "ipo_listing_requests_number_of_shares_check",
+        "def": "CHECK ((number_of_shares > 0))"
+      },
+      {
+        "name": "ipo_listing_requests_receiving_currency_check",
+        "def": "CHECK ((receiving_currency = ANY (ARRAY['USD'::text, 'EUR'::text])))"
+      },
+      {
+        "name": "ipo_listing_requests_share_type_check",
+        "def": "CHECK ((share_type = ANY (ARRAY['seed_private_sale'::text, 'ssi'::text, 'pre_ipo'::text])))"
+      },
+      {
+        "name": "ipo_listing_requests_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'completed'::text, 'suspended'::text, 'more_info_requested'::text])))"
+      }
+    ],
+    "member_support_tickets": [
+      {
+        "name": "member_support_tickets_category_check",
+        "def": "CHECK ((category = ANY (ARRAY['profile_security'::text, 'voucher'::text, 'staking'::text, 'banking'::text, 'other'::text])))"
+      },
+      {
+        "name": "member_support_tickets_severity_check",
+        "def": "CHECK ((severity = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text, 'critical'::text])))"
+      },
+      {
+        "name": "member_support_tickets_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'resolved'::text, 'closed'::text])))"
+      }
+    ],
+    "merchant_business_ibans": [
+      {
+        "name": "merchant_business_ibans_currency_check",
+        "def": "CHECK ((currency = ANY (ARRAY['EUR'::text, 'USD'::text, 'CHF'::text, 'GBP'::text])))"
+      },
+      {
+        "name": "merchant_business_ibans_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['active'::text, 'frozen'::text, 'closed'::text])))"
+      }
+    ],
+    "merchant_products": [
+      {
+        "name": "merchant_products_crypto_currency_check",
+        "def": "CHECK ((crypto_currency = ANY (ARRAY['STR'::text, 'wSTR'::text, 'CCOS'::text, 'ARSS'::text])))"
+      },
+      {
+        "name": "merchant_products_price_check",
+        "def": "CHECK ((price >= (0)::numeric))"
+      }
+    ],
+    "pending_balance_locks": [
+      {
+        "name": "pending_balance_locks_locked_amount_check",
+        "def": "CHECK ((locked_amount > (0)::numeric))"
+      }
+    ],
+    "pending_profile_changes": [
+      {
+        "name": "pending_profile_changes_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'email_confirmed'::text])))"
+      }
+    ],
+    "prepaid_cards": [
+      {
+        "name": "prepaid_cards_card_status_check",
+        "def": "CHECK ((card_status = ANY (ARRAY['active'::text, 'pending'::text, 'blocked'::text, 'expired'::text])))"
+      },
+      {
+        "name": "prepaid_cards_shipping_status_check",
+        "def": "CHECK ((shipping_status = ANY (ARRAY['pending'::text, 'shipped'::text, 'delivered'::text, NULL::text])))"
+      }
+    ],
+    "seed_str_applications": [
+      {
+        "name": "seed_str_applications_payment_status_check",
+        "def": "CHECK ((payment_status = ANY (ARRAY['awaiting_payment'::text, 'payment_submitted'::text, 'payment_verified'::text, 'payment_declined'::text, 'payment_expired'::text, 'cancelled'::text])))"
+      }
+    ],
+    "staking_requests": [
+      {
+        "name": "staking_requests_duration_check",
+        "def": "CHECK ((duration_months = ANY (ARRAY[3, 6, 9, 12, 24, 36, 48])))"
+      },
+      {
+        "name": "staking_requests_pool_type_check",
+        "def": "CHECK ((pool_type = ANY (ARRAY['str'::text, 'ccos'::text, 'domain'::text])))"
+      },
+      {
+        "name": "staking_requests_request_type_check",
+        "def": "CHECK ((request_type = ANY (ARRAY['stake'::text, 'unstake'::text])))"
+      },
+      {
+        "name": "staking_requests_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))"
+      }
+    ],
+    "staking_rewards_distribution": [
+      {
+        "name": "valid_apy",
+        "def": "CHECK (((calculated_apy > (0)::numeric) AND (calculated_apy <= (100)::numeric)))"
+      },
+      {
+        "name": "valid_efficiency",
+        "def": "CHECK (((network_efficiency > (0)::numeric) AND (network_efficiency <= 2.0)))"
+      },
+      {
+        "name": "valid_stake_amount",
+        "def": "CHECK (((stake_amount >= (1000)::numeric) AND (stake_amount <= (10000000)::numeric)))"
+      }
+    ],
+    "str_domains": [
+      {
+        "name": "str_domains_domain_name_format",
+        "def": "CHECK (((domain_name IS NOT NULL) AND (length(domain_name) >= 3) AND (length(domain_name) <= 63)))"
+      },
+      {
+        "name": "str_domains_domain_type_check",
+        "def": "CHECK ((domain_type = ANY (ARRAY['personal'::text, 'business'::text, 'premium'::text, 'brand'::text])))"
+      },
+      {
+        "name": "str_domains_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'minted'::text, 'rejected'::text])))"
+      }
+    ],
+    "str_dome_requests": [
+      {
+        "name": "str_dome_requests_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'fulfilled'::text, 'cancelled'::text])))"
+      }
+    ],
+    "user_staking_pools": [
+      {
+        "name": "user_staking_pools_pool_type_check",
+        "def": "CHECK ((pool_type = ANY (ARRAY['str'::text, 'ccos'::text, 'domain'::text, 'arss'::text, 'wstr'::text, 'estr'::text, 'str_stable'::text])))"
+      },
+      {
+        "name": "user_staking_pools_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['active'::text, 'declined'::text, 'suspended'::text])))"
+      }
+    ],
+    "vesting_tokens": [
+      {
+        "name": "vesting_tokens_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['vesting'::text, 'vested'::text, 'staked'::text, 'cancelled'::text])))"
+      },
+      {
+        "name": "vesting_tokens_token_type_check",
+        "def": "CHECK ((token_type = ANY (ARRAY['str'::text, 'arss'::text, 'ccos'::text, 'starw'::text])))"
+      }
+    ],
+    "voucher_redemptions": [
+      {
+        "name": "voucher_redemptions_payment_type_check",
+        "def": "CHECK ((payment_type = ANY (ARRAY['crypto'::text, 'bank'::text, 'card'::text, 'voucher'::text])))"
+      },
+      {
+        "name": "voucher_redemptions_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'processing'::text, 'approved'::text, 'rejected'::text])))"
+      },
+      {
+        "name": "voucher_redemptions_token_type_check",
+        "def": "CHECK ((token_type = ANY (ARRAY['str'::text, 'ccos'::text, 'arss'::text, 'vanquish'::text])))"
+      }
+    ],
+    "wallet_transactions": [
+      {
+        "name": "valid_addresses",
+        "def": "CHECK ((from_address <> to_address))"
+      },
+      {
+        "name": "wallet_transactions_amount_check",
+        "def": "CHECK ((amount > (0)::numeric))"
+      },
+      {
+        "name": "wallet_transactions_status_check",
+        "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'processing'::text, 'completed'::text, 'failed'::text, 'cancelled'::text])))"
+      }
+    ]
+  },
+  "keys": {
+    "ai_usage_sessions": [
+      {
+        "name": "ai_usage_sessions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "airdrop_registrations": [
+      {
+        "name": "airdrop_registrations_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "arss_transactions": [
+      {
+        "name": "arss_transactions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "arx_audit_trail": [
+      {
+        "name": "arx_audit_trail_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "arx_club_members": [
+      {
+        "name": "arx_club_members_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "arx_club_members_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      }
+    ],
+    "arx_treasury_transactions": [
+      {
+        "name": "arx_treasury_transactions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "auth_attempts": [
+      {
+        "name": "auth_attempts_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "capacity_sharing": [
+      {
+        "name": "capacity_sharing_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "ccoin_bank_applications": [
+      {
+        "name": "ccoin_bank_applications_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "ccoin_banking_profiles": [
+      {
+        "name": "ccoin_banking_profiles_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "ccoin_banking_profiles_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      }
+    ],
+    "ccoin_validations": [
+      {
+        "name": "ccoin_validations_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "crypto_wallets": [
+      {
+        "name": "crypto_wallets_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "crypto_wallets_user_id_token_type_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id, token_type)"
+      }
+    ],
+    "currency_exchanges": [
+      {
+        "name": "currency_exchanges_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "domain_marketplace_bids": [
+      {
+        "name": "domain_marketplace_bids_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "domain_marketplace_listings": [
+      {
+        "name": "domain_marketplace_listings_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "domain_marketplace_transactions": [
+      {
+        "name": "domain_marketplace_transactions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "enhanced_rate_limits": [
+      {
+        "name": "enhanced_rate_limits_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "enhanced_staking_pools": [
+      {
+        "name": "enhanced_staking_pools_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "fiat_transactions": [
+      {
+        "name": "fiat_transactions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "fiat_transactions_tx_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (tx_id)"
+      }
+    ],
+    "fiat_wallets": [
+      {
+        "name": "fiat_wallets_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "fiat_wallets_user_id_currency_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id, currency)"
+      }
+    ],
+    "github_integrations": [
+      {
+        "name": "github_integrations_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "github_integrations_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      }
+    ],
+    "governance_proposals": [
+      {
+        "name": "governance_proposals_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "guardian_flash_alerts": [
+      {
+        "name": "guardian_flash_alerts_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "guardian_invitations": [
+      {
+        "name": "guardian_invitations_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "guardian_wallets": [
+      {
+        "name": "guardian_wallets_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "iban_accounts": [
+      {
+        "name": "iban_accounts_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "iban_accounts_iban_key",
+        "kind": "unique",
+        "def": "UNIQUE (iban)"
+      }
+    ],
+    "ipo_listing_requests": [
+      {
+        "name": "ipo_listing_requests_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "learning_contributions": [
+      {
+        "name": "learning_contributions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "liquidity_pools": [
+      {
+        "name": "liquidity_pools_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "liquidity_transactions": [
+      {
+        "name": "liquidity_transactions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "member_support_tickets": [
+      {
+        "name": "member_support_tickets_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "merchant_business_ibans": [
+      {
+        "name": "merchant_business_ibans_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "merchant_products": [
+      {
+        "name": "merchant_products_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "pending_balance_locks": [
+      {
+        "name": "pending_balance_locks_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "pending_balance_locks_transaction_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (transaction_id)"
+      }
+    ],
+    "pending_profile_changes": [
+      {
+        "name": "pending_profile_changes_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "pending_profile_changes_confirmation_token_key",
+        "kind": "unique",
+        "def": "UNIQUE (confirmation_token)"
+      }
+    ],
+    "praeco_peers": [
+      {
+        "name": "praeco_peers_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "praeco_peers_node_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (node_id)"
+      }
+    ],
+    "prepaid_cards": [
+      {
+        "name": "prepaid_cards_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "private_seed_str_applications": [
+      {
+        "name": "private_seed_str_applications_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "private_seed_str_audit_log": [
+      {
+        "name": "private_seed_str_audit_log_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "profile_changes": [
+      {
+        "name": "profile_changes_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "profiles": [
+      {
+        "name": "profiles_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "profiles_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      }
+    ],
+    "safe_admins": [
+      {
+        "name": "safe_admins_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (user_id)"
+      }
+    ],
+    "safe_purchases": [
+      {
+        "name": "safe_purchases_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "security_audit_log": [
+      {
+        "name": "security_audit_log_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "seed_str_affiliates": [
+      {
+        "name": "seed_str_affiliates_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "seed_str_affiliates_affiliate_code_key",
+        "kind": "unique",
+        "def": "UNIQUE (affiliate_code)"
+      }
+    ],
+    "seed_str_applications": [
+      {
+        "name": "seed_str_applications_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "seed_str_audit_log": [
+      {
+        "name": "seed_str_audit_log_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "staking_data_cache": [
+      {
+        "name": "staking_data_cache_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "staking_data_cache_cache_key_key",
+        "kind": "unique",
+        "def": "UNIQUE (cache_key)"
+      }
+    ],
+    "staking_requests": [
+      {
+        "name": "staking_requests_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "staking_rewards_distribution": [
+      {
+        "name": "staking_rewards_distribution_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "str_domain_connections": [
+      {
+        "name": "str_domain_connections_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "str_domains": [
+      {
+        "name": "str_domains_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "str_domains_domain_name_unique",
+        "kind": "unique",
+        "def": "UNIQUE (domain_name)"
+      },
+      {
+        "name": "unique_domain_name",
+        "kind": "unique",
+        "def": "UNIQUE (domain_name)"
+      }
+    ],
+    "str_dome_requests": [
+      {
+        "name": "str_dome_requests_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "user_liquidity_positions": [
+      {
+        "name": "user_liquidity_positions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "user_messages": [
+      {
+        "name": "user_messages_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "user_profiles": [
+      {
+        "name": "user_profiles_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "user_profiles_referral_code_key",
+        "kind": "unique",
+        "def": "UNIQUE (referral_code)"
+      },
+      {
+        "name": "user_profiles_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      }
+    ],
+    "user_roles": [
+      {
+        "name": "user_roles_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "user_roles_user_id_role_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id, role)"
+      }
+    ],
+    "user_staking_pools": [
+      {
+        "name": "user_staking_pools_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "user_str_shares": [
+      {
+        "name": "user_str_shares_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "user_str_shares_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      }
+    ],
+    "user_wallets": [
+      {
+        "name": "user_wallets_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "user_wallets_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      },
+      {
+        "name": "user_wallets_wallet_address_key",
+        "kind": "unique",
+        "def": "UNIQUE (wallet_address)"
+      }
+    ],
+    "vesting_tokens": [
+      {
+        "name": "vesting_tokens_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "vip_users": [
+      {
+        "name": "vip_users_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "vip_users_user_id_key",
+        "kind": "unique",
+        "def": "UNIQUE (user_id)"
+      }
+    ],
+    "voucher_redemptions": [
+      {
+        "name": "voucher_redemptions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ],
+    "wallet_transactions": [
+      {
+        "name": "wallet_transactions_pkey",
+        "kind": "primary",
+        "def": "PRIMARY KEY (id)"
+      }
+    ]
+  }
+}

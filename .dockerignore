@@ -1,0 +1,12 @@
+# Keep the build context small and keep local secrets out of it. .env.local
+# holds the self-hosted stack's keys; it must never reach a layer.
+node_modules
+dist
+.git
+.env
+.env.*
+!.env.example
+db
+docs
+scripts/shoot.mjs
+*.log

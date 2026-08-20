@@ -1,0 +1,30 @@
+{
+  "failed": 1,
+  "recorded": "2026-08-19",
+  "recorded_by": "hostless replay against 732 timestamped migrations, PGlite 0.5.5 / PostgreSQL 18.3",
+  "shape_at_baseline": {
+    "migrations": 732,
+    "applied": 725,
+    "applied_on_retry": 29,
+    "data_only": 6,
+    "failed": 1
+  },
+  "notes": [
+    "`failed` is the ONLY gate. CI fails when the FAILED count rises above it.",
+    "Raising this number is a deliberate act: do it in the same commit as the",
+    "migration that caused the rise, and say here why the rise is acceptable.",
+    "Lowering it is free and should be done whenever a run reports fewer.",
+    "",
+    "The one known failure at this baseline:",
+    "  20250801144013_03d5f2bc-4243-4cd6-b232-cc8b31ce351f.sql",
+    "    could not find a function named \"assign_admin_role\"",
+    "  The file REVOKEs and GRANTs on a function it does not create and that no",
+    "  earlier migration creates either. It existed in the live database before",
+    "  the history was captured, so the history has never been self-contained",
+    "  here. Pre-existing, not a regression, and it changes no schema object.",
+    "",
+    "PENDING_PRODUCTION_20260819_privilege_closure.sql is NOT replayed and is",
+    "not counted: it carries no timestamp prefix, so it has no position in the",
+    "history. It is a staged production change awaiting review, not a migration."
+  ]
+}

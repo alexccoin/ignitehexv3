@@ -1,0 +1,1 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.safe_admins TO authenticated; GRANT ALL ON public.safe_admins TO service_role;

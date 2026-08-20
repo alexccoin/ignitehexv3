@@ -1,0 +1,38 @@
+-- Create Thomas Wenz's report access application directly
+INSERT INTO private_seed_str_applications (
+  user_id,
+  email,
+  full_name,
+  phone,
+  street_address,
+  city,
+  state_province,
+  postal_code,
+  country,
+  presented_by,
+  purpose_of_report,
+  signature_first_name,
+  signature_last_name,
+  signature_date,
+  acknowledgment_accepted,
+  status,
+  investment_amount
+) VALUES (
+  'fcf333e7-10e7-4d26-818f-31159f325c73',
+  'thomas.wenz70@gmail.com',
+  'Thomas Wenz',
+  'To be provided',
+  'To be provided',
+  'To be provided',
+  'To be provided',
+  'To be provided',
+  'Germany',
+  'Admin created',
+  'Report access request - application created by admin due to submission issues',
+  'Thomas',
+  'Wenz',
+  NOW(),
+  true,
+  'pending',
+  0
+);

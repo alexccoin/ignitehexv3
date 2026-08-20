@@ -1,0 +1,1 @@
+DELETE FROM seed_str_applications WHERE id = '76fbca47-8a9a-4b84-8d0d-54792af90bcd';
