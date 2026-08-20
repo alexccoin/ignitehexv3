@@ -3487,40 +3487,52 @@ export type Database = {
       }
       ecosystem_discrepancy: {
         Row: {
+          checked_at: string | null
           created_at: string
+          evidence: string | null
           id: string
           kind: string
           note: string | null
           ordinal: number
+          resolution: string | null
           says_a: string
           says_b: string
           severity: string
           source_page: string | null
           subject: string
+          verdict: string
         }
         Insert: {
+          checked_at?: string | null
           created_at?: string
+          evidence?: string | null
           id: string
           kind: string
           note?: string | null
           ordinal?: number
+          resolution?: string | null
           says_a: string
           says_b: string
           severity?: string
           source_page?: string | null
           subject: string
+          verdict?: string
         }
         Update: {
+          checked_at?: string | null
           created_at?: string
+          evidence?: string | null
           id?: string
           kind?: string
           note?: string | null
           ordinal?: number
+          resolution?: string | null
           says_a?: string
           says_b?: string
           severity?: string
           source_page?: string | null
           subject?: string
+          verdict?: string
         }
         Relationships: []
       }

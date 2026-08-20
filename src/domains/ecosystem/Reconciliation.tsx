@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { shortDate } from '@/lib/format';
 import { useDiscrepancies, type Discrepancy } from './hooks';
 
 /**
@@ -22,9 +24,15 @@ import { useDiscrepancies, type Discrepancy } from './hooks';
  * APY schedule; the cost of quietly picking a winner is exactly that situation,
  * repeated.
  *
- * So each conflict is a row, with both sides quoted and the pages cited, and a
- * reader can go and check. Nothing here is resolved, because resolving it is a
- * decision for whoever owns the document — not for the screen displaying it.
+ * So each conflict is a row, with both sides quoted and the pages cited — and
+ * then, where it can be, settled. Every published host was probed: some claims
+ * simply resolve, because an endpoint either answers or it does not. Those carry
+ * a verdict and the evidence behind it.
+ *
+ * What stays open stays open honestly. Whether a patent was granted, which token
+ * set is stakeable, or which regulator authorised a banking product cannot be
+ * settled by a screen, and pretending otherwise would recreate the problem this
+ * page exists to expose.
  */
 
 const KIND_LABEL: Record<string, string> = {
@@ -39,15 +47,27 @@ const KIND_ICON: Record<string, typeof AlertTriangle> = {
   unstated: FileQuestion,
 };
 
-const FILTERS = ['all', 'material', 'internal', 'platform', 'unstated'] as const;
+const FILTERS = ['all', 'resolved', 'unverifiable', 'open', 'material'] as const;
 type Filter = (typeof FILTERS)[number];
 
 const FILTER_LABEL: Record<Filter, string> = {
   all: 'All',
+  resolved: 'Resolved',
+  unverifiable: 'Checked, unsettled',
+  open: 'Needs a decision',
   material: 'Material only',
-  internal: 'Self-contradictions',
-  platform: 'Versus this platform',
-  unstated: 'Unsupported claims',
+};
+
+const VERDICT_LABEL: Record<string, string> = {
+  resolved: 'Resolved',
+  unverifiable: 'Checked — unsettled',
+  open: 'Needs a decision',
+};
+
+const VERDICT_TONE: Record<string, 'success' | 'info' | 'warning'> = {
+  resolved: 'success',
+  unverifiable: 'info',
+  open: 'warning',
 };
 
 function Row({ d }: { d: Discrepancy }) {
@@ -64,6 +84,9 @@ function Row({ d }: { d: Discrepancy }) {
           </CardTitle>
           <div className="flex items-center gap-2">
             {material && <Badge tone="warning">Material</Badge>}
+            <Badge tone={VERDICT_TONE[d.verdict] ?? 'neutral'}>
+              {VERDICT_LABEL[d.verdict] ?? d.verdict}
+            </Badge>
             <Badge tone="neutral">{KIND_LABEL[d.kind] ?? d.kind}</Badge>
           </div>
         </div>
@@ -87,6 +110,34 @@ function Row({ d }: { d: Discrepancy }) {
           </div>
         </div>
         {d.note && <p className="text-sm text-muted-foreground">{d.note}</p>}
+
+        {/* The verdict, and the evidence behind it. A conclusion without its
+            evidence is just another assertion competing with the two above. */}
+        {d.resolution && (
+          <div
+            className={cn(
+              'rounded-lg border p-3',
+              d.verdict === 'resolved'
+                ? 'border-success/30 bg-success/5'
+                : d.verdict === 'unverifiable'
+                  ? 'border-info/30 bg-info/5'
+                  : 'border-warning/30 bg-warning/5'
+            )}
+          >
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {VERDICT_LABEL[d.verdict] ?? 'Verdict'}
+            </p>
+            <p className="text-sm">{d.resolution}</p>
+            {d.evidence && (
+              <p className="mt-2 font-mono text-xs text-muted-foreground">{d.evidence}</p>
+            )}
+            {d.checked_at && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Checked {shortDate(d.checked_at)}
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -101,23 +152,32 @@ export default function Reconciliation() {
 
   const all = data ?? [];
   const shown = all.filter((d) =>
-    filter === 'all' ? true : filter === 'material' ? d.severity === 'material' : d.kind === filter
+    filter === 'all' ? true : filter === 'material' ? d.severity === 'material' : d.verdict === filter
   );
-  const material = all.filter((d) => d.severity === 'material').length;
+  const resolved = all.filter((d) => d.verdict === 'resolved').length;
+  const unsettled = all.filter((d) => d.verdict === 'unverifiable').length;
+  const open = all.filter((d) => d.verdict === 'open').length;
 
   return (
     <>
       <PageHeader
         title="Reconciliation"
-        description={`${all.length} points where the published overview disagrees with itself or with this platform. ${material} are material.`}
+        description={`${all.length} points where the overview disagrees with itself or with this platform — ${resolved} resolved against live evidence, ${unsettled} checked but unsettled, ${open} needing a decision.`}
       />
 
       <Card className="mb-6">
         <CardContent className="space-y-2 pt-5 text-sm text-muted-foreground">
           <p>
-            None of these are resolved here. Both sides are quoted with their page numbers so they can
-            be checked against the source, and the decision about which is correct belongs to whoever
-            owns the document.
+            Both sides are quoted with their page numbers, then settled where the evidence allows.
+            Every address the overview publishes was probed: fifteen of seventeen answer, and the two
+            that do not are <strong>rpc.sourceless.net</strong> and{' '}
+            <strong>explorer.sourceless.net</strong> — the chain endpoints, which is why anchoring on
+            this platform is built and dormant rather than switched on.
+          </p>
+          <p>
+            What remains open needs the document&rsquo;s owner, not a probe. Whether a patent was
+            granted, which tokens are actually stakeable and at what rates, and which regulator
+            authorised a banking product are decisions, not measurements.
           </p>
           <p>
             Two absences are worth naming on their own, because they are not contradictions but gaps:

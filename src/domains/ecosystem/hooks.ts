@@ -13,9 +13,16 @@ import type { Database } from '@/lib/database.types';
  * for its APY schedule to prove it.
  *
  * The unusual part is `useDiscrepancies`. The overview contradicts itself in
- * several places and contradicts this database in others, and those conflicts
- * are stored and rendered rather than quietly resolved. Picking a winner would
- * mean inventing authority the source document does not give us.
+ * several places and contradicts this database in others, and each conflict
+ * carries a verdict:
+ *
+ *   resolved      a live probe settles it, and `evidence` says how
+ *   unverifiable  the probe ran and does not settle it
+ *   open          no probe can settle it; the document's owner must
+ *
+ * Recording a conflict without ever testing it would be the lazy half of this
+ * job. Where a host either answers or does not, that is a fact, and leaving it
+ * marked "unresolved" would be a choice not to look.
  */
 
 type Tables = Database['public']['Tables'];
@@ -31,7 +38,8 @@ export type EcosystemToken = Pick<
 >;
 export type Discrepancy = Pick<
   Tables['ecosystem_discrepancy']['Row'],
-  'id' | 'ordinal' | 'kind' | 'severity' | 'subject' | 'says_a' | 'says_b' | 'note' | 'source_page'
+  | 'id' | 'ordinal' | 'kind' | 'severity' | 'subject' | 'says_a' | 'says_b' | 'note' | 'source_page'
+  | 'verdict' | 'resolution' | 'evidence' | 'checked_at'
 >;
 
 export type ComponentStatus = 'live' | 'beta' | 'testing' | 'rnd' | 'planned' | 'unstated';
@@ -40,7 +48,8 @@ const SECTION_COLS = 'id, ordinal, title, subtitle';
 const COMPONENT_COLS =
   'id, section_id, ordinal, name, summary, status, status_note, url, source_page';
 const TOKEN_COLS = 'symbol, ordinal, name, role, in_overview, source_page';
-const DISCREPANCY_COLS = 'id, ordinal, kind, severity, subject, says_a, says_b, note, source_page';
+const DISCREPANCY_COLS =
+  'id, ordinal, kind, severity, subject, says_a, says_b, note, source_page, verdict, resolution, evidence, checked_at';
 
 /** Sections and their components, in the overview's own order. */
 export function useEcosystem() {
