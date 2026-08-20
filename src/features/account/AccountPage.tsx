@@ -9,7 +9,13 @@ import { StatusBadge } from '@/components/ui/status';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { TableWrap, Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useV2Account, useSubmitClaim } from '@/hooks/data';
+import {
+  useV2Account,
+  useSubmitClaim,
+  useAcceptTerms,
+  useSubmitForReview,
+  MICA_TERMS_VERSION,
+} from '@/hooks/data';
 import { shortDate } from '@/lib/format';
 
 const CATEGORIES = [
@@ -56,6 +62,8 @@ function Progress({ account, claimCount, verifiedCount }: {
 export default function AccountPage() {
   const v2 = useV2Account();
   const submit = useSubmitClaim();
+  const acceptTerms = useAcceptTerms();
+  const submitForReview = useSubmitForReview();
 
   const [category, setCategory] = useState('token');
   const [symbol, setSymbol] = useState('');
@@ -65,6 +73,18 @@ export default function AccountPage() {
   const account = v2.data?.account ?? null;
   const claims = v2.data?.claims ?? [];
   const assets = v2.data?.assets ?? [];
+
+  /**
+   * Whether the member may still change this account.
+   *
+   * These two mirror the database exactly rather than approximating it. The
+   * own-update policy on v2_accounts has `USING (status IN ('draft','rejected'))`,
+   * so an account in any other state matches zero rows on update — which
+   * PostgREST reports as `200 []`, not an error. Offering the buttons anyway
+   * would produce a control that appears to work and silently does nothing.
+   */
+  const editable = account?.status === 'draft' || account?.status === 'rejected';
+  const canSubmit = editable && !!account?.mica_terms_accepted && claims.length > 0;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -126,8 +146,74 @@ export default function AccountPage() {
           <CardHeader>
             <CardTitle>Progress</CardTitle>
           </CardHeader>
-          <CardContent className="pt-3">
+          <CardContent className="space-y-4 pt-3">
             <Progress account={account} claimCount={claims.length} verifiedCount={assets.length} />
+
+            {/* The two steps a member performs. Without these the list above was
+                a status display of things nothing could ever change: terms had
+                no way to be accepted and the account had no way to be sent for
+                review, so a member could never get past step two. */}
+            {account && editable && (
+              <div className="space-y-3 border-t border-border pt-4">
+                {!account.mica_terms_accepted ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Before submitting, confirm you accept the platform terms ({MICA_TERMS_VERSION}).
+                    </p>
+                    <Button
+                      size="sm"
+                      disabled={acceptTerms.isPending}
+                      onClick={() =>
+                        acceptTerms.mutate(account.id, {
+                          onSuccess: () => toast.success(`Terms ${MICA_TERMS_VERSION} accepted.`),
+                          onError: (e) =>
+                            toast.error(e instanceof Error ? e.message : 'Could not record acceptance'),
+                        })
+                      }
+                    >
+                      {acceptTerms.isPending ? 'Recording…' : 'Accept terms'}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Terms {account.mica_terms_version ?? MICA_TERMS_VERSION} accepted.
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  <Button
+                    size="sm"
+                    variant={canSubmit ? 'primary' : 'ghost'}
+                    disabled={!canSubmit || submitForReview.isPending}
+                    onClick={() =>
+                      submitForReview.mutate(account.id, {
+                        onSuccess: () => toast.success('Sent for review.'),
+                        onError: (e) =>
+                          toast.error(e instanceof Error ? e.message : 'Could not submit'),
+                      })
+                    }
+                  >
+                    {submitForReview.isPending ? 'Submitting…' : 'Submit for review'}
+                  </Button>
+                  {/* Say which prerequisite is missing rather than presenting a
+                      disabled button with no explanation. */}
+                  {!canSubmit && (
+                    <p className="text-xs text-muted-foreground">
+                      {!account.mica_terms_accepted
+                        ? 'Accept the terms first.'
+                        : 'Add at least one asset claim first.'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {account && !editable && account.status !== 'approved' && (
+              <p className="border-t border-border pt-4 text-sm text-muted-foreground">
+                Your account is with an administrator. You cannot change it while it is under review.
+              </p>
+            )}
+
             {account?.rejection_reason && (
               <p className="mt-4 rounded-md border border-danger/30 bg-danger/5 p-3 text-sm text-danger">
                 {account.rejection_reason}

@@ -132,7 +132,7 @@ export function useV2Account() {
       const [account, claims, assets, connections] = await Promise.all([
         supabase
           .from('v2_accounts')
-          .select('id, user_id, status, account_mode, email, full_name, country_of_residence, investor_classification, mica_terms_accepted, submitted_at, reviewed_at, review_notes, rejection_reason, created_at')
+          .select('id, user_id, status, account_mode, email, full_name, country_of_residence, investor_classification, mica_terms_accepted, mica_terms_version, submitted_at, reviewed_at, review_notes, rejection_reason, created_at')
           .eq('user_id', userId!)
           .maybeSingle(),
         supabase
@@ -189,6 +189,86 @@ export function useSubmitClaim() {
       // The insert is checked. v2 had 56 unchecked writes, several of which
       // showed a success toast for an operation RLS had silently dropped.
       if (error) throw new Error(error.message);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.v2Account(userId ?? 'anon') }),
+  });
+}
+
+/**
+ * The version string recorded against an acceptance.
+ *
+ * It must name the terms document the member was actually shown. Existing rows
+ * carry 'v2.0' and the operations console renders it verbatim ("Accepted v2.0"),
+ * so changing this without publishing a new document would make the record
+ * claim something untrue about what was agreed.
+ */
+export const MICA_TERMS_VERSION = 'v2.0';
+
+/**
+ * Accept the MiCA terms.
+ *
+ * WHY AN UPDATE AND NOT AN RPC: `v2_accounts` already carries an own-update
+ * policy (USING status IN ('draft','rejected'), WITH CHECK status IN
+ * ('draft','submitted')) and a guard trigger that resets every reviewer field
+ * from OLD for a non-admin. So the database already decides exactly what a
+ * member may change here, and a SECURITY DEFINER wrapper would only re-state
+ * that in a second place where the two could drift.
+ *
+ * Both writes below `.select('id')` and treat an empty result as a failure.
+ * When RLS refuses an UPDATE, PostgREST answers `200 []` — no error, no rows.
+ * Reporting that as success is how v2 produced green toasts for operations that
+ * did nothing; see F-055.
+ */
+export function useAcceptTerms() {
+  const userId = useUserId();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (accountId: string) => {
+      const { data, error } = await supabase
+        .from('v2_accounts')
+        // No timestamp column here — v2_accounts records the fact and the
+        // version only; `mica_terms_accepted_at` lives on user_profiles, which
+        // is a different record with its own review flow.
+        .update({
+          mica_terms_accepted: true,
+          mica_terms_version: MICA_TERMS_VERSION,
+        })
+        .eq('id', accountId)
+        .select('id');
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        throw new Error(
+          'Terms could not be recorded. An account already submitted or approved can no longer be edited.'
+        );
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.v2Account(userId ?? 'anon') }),
+  });
+}
+
+/**
+ * Submit the account for administrator review.
+ *
+ * Moves status draft/rejected -> submitted, which the own-update policy's WITH
+ * CHECK permits and the guard trigger allows for a non-admin. Everything past
+ * this point is an administrator's decision.
+ */
+export function useSubmitForReview() {
+  const userId = useUserId();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (accountId: string) => {
+      const { data, error } = await supabase
+        .from('v2_accounts')
+        .update({ status: 'submitted', submitted_at: new Date().toISOString() })
+        .eq('id', accountId)
+        .select('id');
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        throw new Error('This account is not in a state that can be submitted.');
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.v2Account(userId ?? 'anon') }),
   });
