@@ -153,17 +153,23 @@ GRANT EXECUTE ON FUNCTION public.set_ecosystem_app_active(text, boolean) TO auth
 --
 -- Re-check these if an app changes hosting. A stale `true` shows the member an
 -- empty window, which is the failure the notice in Apps.tsx explains.
+--
+-- STRDOME appears ONCE. The shop is seeded inactive: it is a second strdome
+-- tile that reads as a duplicate next to strdome.com, and it is the one entry
+-- that could never open in the dashboard, so it was the odd item out twice
+-- over. Left as a row rather than deleted, so re-enabling it is one call to
+-- set_ecosystem_app_active rather than a new migration.
 -- =====================================================================
-INSERT INTO public.ecosystem_apps (slug, name, url, description, category, embeddable, sort_order)
+INSERT INTO public.ecosystem_apps (slug, name, url, description, category, embeddable, sort_order, active)
 VALUES
-  ('strdome-shop', 'STRDOME Shop', 'https://shop.strdome.com',
-   'Packages, upgrades and merchandise for domain holders.', 'commerce', false, 10),
   ('str-domains', 'str.domains', 'https://str.domains',
-   'The registry that issues str.name identifiers.', 'identity', true, 20),
+   'The registry that issues str.name identifiers.', 'identity', true, 20, true),
   ('strdome', 'strdome.com', 'https://strdome.com',
-   'Connectivity and eSIM delivery for domain holders.', 'connectivity', true, 30),
+   'Connectivity, eSIM delivery and the shop for domain holders.', 'connectivity', true, 30, true),
   ('ccoin-finance', 'ccoin.finance', 'https://ccoin.finance',
-   'The CCoin markets front end.', 'finance', true, 40),
+   'The CCoin markets front end.', 'finance', true, 40, true),
   ('strtalk', 'STR Talk', 'https://strtalk.net',
-   'Ecosystem messaging.', 'social', true, 50)
+   'Ecosystem messaging.', 'social', true, 50, true),
+  ('strdome-shop', 'STRDOME Shop', 'https://shop.strdome.com',
+   'Packages, upgrades and merchandise for domain holders.', 'commerce', false, 60, false)
 ON CONFLICT (slug) DO NOTHING;
