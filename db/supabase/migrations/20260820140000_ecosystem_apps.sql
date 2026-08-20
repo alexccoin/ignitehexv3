@@ -134,20 +134,36 @@ REVOKE ALL ON FUNCTION public.set_ecosystem_app_active(text, boolean) FROM PUBLI
 GRANT EXECUTE ON FUNCTION public.set_ecosystem_app_active(text, boolean) TO authenticated, service_role;
 
 -- =====================================================================
--- The known ecosystem. `embeddable` starts FALSE for everything: an app is
--- marked framable only once someone has confirmed it actually frames, rather
--- than assuming it does and showing members an empty window.
+-- The known ecosystem.
+--
+-- `embeddable` is set from each site's ACTUAL response headers, checked on
+-- 2026-08-20, not from an assumption:
+--
+--   shop.strdome.com   X-Frame-Options: DENY  +  CSP frame-ancestors 'none'
+--   str.domains        no framing restriction
+--   strdome.com        no framing restriction
+--   ccoin.finance      no framing restriction
+--   strtalk.net        no framing restriction
+--
+-- The shop is the only one that refuses, and it refuses through both available
+-- mechanisms — that is a deliberate decision by its operators, not an oversight.
+-- It is also precisely the app the implementation this was ported from
+-- special-cased by name in order to route around it. Marking it false here is
+-- the honest reading: it opens in a new tab.
+--
+-- Re-check these if an app changes hosting. A stale `true` shows the member an
+-- empty window, which is the failure the notice in Apps.tsx explains.
 -- =====================================================================
 INSERT INTO public.ecosystem_apps (slug, name, url, description, category, embeddable, sort_order)
 VALUES
   ('strdome-shop', 'STRDOME Shop', 'https://shop.strdome.com',
    'Packages, upgrades and merchandise for domain holders.', 'commerce', false, 10),
   ('str-domains', 'str.domains', 'https://str.domains',
-   'The registry that issues str.name identifiers.', 'identity', false, 20),
+   'The registry that issues str.name identifiers.', 'identity', true, 20),
   ('strdome', 'strdome.com', 'https://strdome.com',
-   'Connectivity and eSIM delivery for domain holders.', 'connectivity', false, 30),
+   'Connectivity and eSIM delivery for domain holders.', 'connectivity', true, 30),
   ('ccoin-finance', 'ccoin.finance', 'https://ccoin.finance',
-   'The CCoin markets front end.', 'finance', false, 40),
+   'The CCoin markets front end.', 'finance', true, 40),
   ('strtalk', 'STR Talk', 'https://strtalk.net',
-   'Ecosystem messaging.', 'social', false, 50)
+   'Ecosystem messaging.', 'social', true, 50)
 ON CONFLICT (slug) DO NOTHING;
