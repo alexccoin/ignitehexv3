@@ -194,3 +194,65 @@ jobs:
           done
 
           docker rm -f ihx
+  # ---------------------------------------------------------------- deploy
+  #
+  # Only after the app job is green, and only on a direct push to main.
+  #
+  # WHY `if` AND `needs` BOTH: NETLIFY_AUTH_TOKEN is an ACCOUNT-WIDE Netlify
+  # personal token — it can reach every site on the account, not just this one.
+  # This repository is public, so a workflow that ran on `pull_request` would
+  # hand that token to anyone who opened a PR from a fork. GitHub does not
+  # expose secrets to fork PRs by default, but that default is one settings
+  # change away from being wrong, so the job refuses to run on anything but a
+  # push to main regardless.
+  #
+  # `needs: app` means a build that fails typecheck, lint or tests never
+  # reaches the CDN. Deployment is downstream of the checks, not beside them.
+  deploy:
+    name: deploy to netlify
+    needs: app
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # VITE_* variables are inlined at BUILD time, not read at runtime, so they
+      # must be present HERE. A deploy that forgets them ships a bundle pointing
+      # at nothing, and src/lib/supabase.ts throws on load rather than silently
+      # reading the wrong database. Fail early and loudly instead.
+      - name: check the backend is configured
+        run: |
+          test -n "${{ secrets.VITE_SUPABASE_URL }}" || { echo "VITE_SUPABASE_URL is not set"; exit 1; }
+          test -n "${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}" || { echo "VITE_SUPABASE_PUBLISHABLE_KEY is not set"; exit 1; }
+
+      - name: build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run build
+
+      # The publishable key belongs in the bundle; the service-role key never
+      # does. This is cheap and catches the one mistake that would be worst.
+      - name: refuse to publish a bundle containing a service-role key
+        run: |
+          if grep -rqE '"role":"service_role"|service_role' dist/assets/*.js; then
+            echo "a service_role reference is present in the built bundle"
+            exit 1
+          fi
+          echo "clean"
+
+      - name: deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          npx netlify-cli@latest deploy \
+            --prod --dir=dist --no-build \
+            --site="${{ secrets.NETLIFY_SITE_ID }}" \
+            --message="${{ github.sha }}"
