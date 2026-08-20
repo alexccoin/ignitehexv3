@@ -3438,6 +3438,146 @@ export type Database = {
         }
         Relationships: []
       }
+      ecosystem_component: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          ordinal: number
+          section_id: string
+          source_page: number
+          status: string
+          status_note: string | null
+          summary: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+          ordinal?: number
+          section_id: string
+          source_page: number
+          status?: string
+          status_note?: string | null
+          summary: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          ordinal?: number
+          section_id?: string
+          source_page?: number
+          status?: string
+          status_note?: string | null
+          summary?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecosystem_component_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "ecosystem_section"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecosystem_discrepancy: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          ordinal: number
+          says_a: string
+          says_b: string
+          severity: string
+          source_page: string | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          kind: string
+          note?: string | null
+          ordinal?: number
+          says_a: string
+          says_b: string
+          severity?: string
+          source_page?: string | null
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          ordinal?: number
+          says_a?: string
+          says_b?: string
+          severity?: string
+          source_page?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      ecosystem_section: {
+        Row: {
+          created_at: string
+          id: string
+          ordinal: number
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          ordinal: number
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ordinal?: number
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      ecosystem_token: {
+        Row: {
+          created_at: string
+          in_overview: boolean
+          name: string
+          ordinal: number
+          role: string
+          source_page: number | null
+          symbol: string
+        }
+        Insert: {
+          created_at?: string
+          in_overview?: boolean
+          name: string
+          ordinal?: number
+          role: string
+          source_page?: number | null
+          symbol: string
+        }
+        Update: {
+          created_at?: string
+          in_overview?: boolean
+          name?: string
+          ordinal?: number
+          role?: string
+          source_page?: number | null
+          symbol?: string
+        }
+        Relationships: []
+      }
       email_campaign_recipients: {
         Row: {
           campaign_id: string

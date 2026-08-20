@@ -14,6 +14,7 @@ import admin from './admin';
 import support from './support';
 import identity from './identity';
 import migration from './migration';
+import ecosystem from './ecosystem';
 
 /**
  * Every product domain in the platform.
@@ -43,6 +44,7 @@ export const DOMAINS: DomainModule[] = [
   support,
   identity,
   migration,
+  ecosystem,
 ];
 
 export const NAV_GROUPS: { id: DomainModule['group']; label: string }[] = [
