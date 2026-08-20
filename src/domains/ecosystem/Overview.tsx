@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, FlaskConical, GitCompareArrows, Layers } from 'lucide-react';
+import { ArrowUpRight, FlaskConical, Layers } from 'lucide-react';
 import { PageHeader } from '@/components/layout/AppShell';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,8 +32,11 @@ import {
  *
  *  2. **The chain panel reports THIS deployment, not the document.** The
  *     overview shows a live explorer with 14M+ blocks. This platform has the
- *     chain disabled and its RPC does not resolve. The panel says what is true
- *     here and points at the discrepancy rather than repeating the brochure.
+ *     chain disabled, and probing the published endpoints on 20 Aug 2026
+ *     resolved neither of them. The panel states that outright rather than
+ *     repeating the brochure — the one place on the map where the source is
+ *     contradicted, because the alternative is printing a figure we know we
+ *     cannot stand behind.
  */
 
 const STATUS_LABEL: Record<ComponentStatus, string> = {
@@ -121,8 +124,9 @@ function ChainPanel() {
         )}
         <p className="text-xs text-muted-foreground">
           The overview shows a block explorer reporting 14M+ blocks at a 0.4s block time (p.114).
-          Those figures come from a product screenshot rather than a specification slide, and this
-          deployment cannot confirm them — see the reconciliation tab.
+          Those figures come from a product screenshot rather than a specification slide. Probed on
+          20 Aug 2026, neither rpc.sourceless.net nor explorer.sourceless.net resolved, so this
+          deployment cannot confirm them. The explorer that does answer is strxplorer.com.
         </p>
       </CardContent>
     </Card>
@@ -215,29 +219,8 @@ export default function EcosystemOverview() {
         }
       />
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      <div className="mb-6">
         <ChainPanel />
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <GitCompareArrows className="size-4 text-muted-foreground" />
-              Reconciliation, not marketing
-            </CardTitle>
-            <CardDescription>
-              The overview contradicts itself in places and contradicts this database in others. Those
-              conflicts are recorded and shown rather than resolved, because picking a winner would
-              mean inventing authority the document does not give.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="ghost" size="sm" asChild>
-              <a href="/ecosystem/reconciliation">
-                Open the reconciliation list
-                <ArrowUpRight className="size-3.5" />
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       <TokenPanel />
