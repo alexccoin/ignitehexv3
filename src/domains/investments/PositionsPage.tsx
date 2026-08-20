@@ -1,30 +1,45 @@
+import { useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
 import { Server, Landmark, Hourglass } from 'lucide-react';
 import { PageHeader } from '@/components/layout/AppShell';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Field, Input, Label } from '@/components/ui/input';
 import { StatusBadge } from '@/components/ui/status';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Stat } from '@/components/ui/stat';
-import { EmptyState } from '@/components/ui/states';
+import { EmptyState, ErrorState } from '@/components/ui/states';
 import { TableWrap, Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { money, percent, shortDate, token } from '@/lib/format';
+import { useAuth } from '@/features/auth/AuthProvider';
 import {
   CCOS_MINT_BAND,
   FOUNDER_LOCK_DAYS,
   FOUNDER_POSITION_MAX_USD,
   FOUNDER_POSITION_SLOTS,
+  STARW_ARSS_PER_NODE,
+  STARW_MAX_NODES_PER_ORDER,
+  STARW_NODE_PRICE_USD,
+  STARW_PAYMENT_METHODS,
   founderPoolMeta,
 } from './constants';
 import { Async, Detail, LockedAction, Section } from './shared';
-import { useFounderPortfolio, useShareHoldings, useStarwHoldings } from './hooks';
+import {
+  useCreateStarwOrder,
+  useFounderPortfolio,
+  useShareHoldings,
+  useStarwHoldings,
+} from './hooks';
 
 /**
  * What the member actually holds: shares, vesting tokens, founder positions
  * and nodes.
  *
- * Everything here is read-only. The two things v2 let the browser do on these
- * screens — crediting a founder pool and marking a withdrawal executed — are
- * the two operations that most need to be atomic and on-chain-verified, so
- * both are rendered disabled with the endpoint they are waiting on.
+ * The only write on this screen is a node order, which is a request: it
+ * assigns nothing and settles nothing. The two things v2 let the browser do
+ * here - crediting a founder pool and marking a withdrawal executed - are the
+ * two operations that most need to be atomic and on-chain-verified, so both
+ * stay disabled with the endpoint they are waiting on named beside them.
  */
 export default function PositionsPage() {
   const holdings = useShareHoldings();
@@ -391,6 +406,9 @@ function NodesSection() {
       title="Nodes"
       description="StarW nodes, supernodes and the wSTR they have paid out."
     >
+      {/* The order form sits outside <Async> on purpose: its `isEmpty` branch
+          renders for exactly the member who has no nodes yet, which is the
+          member most likely to want to order one. */}
       <Async
         query={starw}
         skeleton={<Skeleton className="h-32 w-full" />}
@@ -466,16 +484,6 @@ function NodesSection() {
               </div>
             )}
 
-            {/* TODO(server): needs a submit-starw-purchase edge function. The
-                order has to be priced server-side and the payment confirmed
-                before a node is assigned; v2 wrote the crypto amount straight
-                from a CoinGecko quote in the browser, with no guard against a
-                zero price, so an order could be stored as NaN nodes' worth. */}
-            <LockedAction
-              label="Order nodes"
-              reason="Node orders are priced and settled server-side before a node number is assigned."
-            />
-
             {data.rewards.length > 0 && (
               <div className="border-t border-border pt-4">
                 <h4 className="mb-3 text-sm font-medium">Recent wSTR rewards</h4>
@@ -506,6 +514,205 @@ function NodesSection() {
           </div>
         )}
       </Async>
+
+      <div className="mt-6 border-t border-border pt-4">
+        <NodeOrderForm />
+      </div>
     </Section>
+  );
+}
+
+/* ------------------------------------------------------------ node orders */
+
+/**
+ * Ordering node licences.
+ *
+ * The order is a request at the published USD price. It assigns no node, moves
+ * no balance and quotes no crypto amount - the columns v2 filled from a
+ * browser-side CoinGecko call (`btc_amount`, `eth_amount`,
+ * `crypto_prices_at_purchase`) are left null, because a quote fetched here is
+ * neither binding nor verifiable. The amount actually due comes with the
+ * payment instruction the reviewer issues.
+ *
+ * TODO(server): assigning the nodes an order paid for, and marking the order
+ * settled, are still two separate writes (`admin_assign_starw_nodes` plus a
+ * status update). A settle-starw-order routine should do both in one
+ * statement so an order cannot end up paid-and-unassigned.
+ */
+function NodeOrderForm() {
+  const { user } = useAuth();
+  const starw = useStarwHoldings();
+  const create = useCreateStarwOrder();
+
+  const [fullName, setFullName] = useState('');
+  const [nodeCount, setNodeCount] = useState('1');
+  const [strDomain, setStrDomain] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState(STARW_PAYMENT_METHODS[0].value);
+
+  const count = Number(nodeCount);
+  const countValid =
+    Number.isInteger(count) && count >= 1 && count <= STARW_MAX_NODES_PER_ORDER;
+  const totalUsd = countValid ? count * STARW_NODE_PRICE_USD : 0;
+
+  const canSubmit =
+    fullName.trim().length > 1 && countValid && !!user?.email && !create.isPending;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!canSubmit) return;
+
+    try {
+      await create.mutateAsync({
+        nodeCount: count,
+        fullName: fullName.trim(),
+        emailAddress: user?.email ?? '',
+        strDomain: strDomain.trim() || null,
+        walletAddress: walletAddress.trim() || null,
+        paymentMethod,
+      });
+      toast.success('Node order submitted. It is now awaiting review.');
+      setNodeCount('1');
+      setStrDomain('');
+      setWalletAddress('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not submit the order');
+    }
+  }
+
+  const openOrders = (starw.data?.purchases ?? []).filter(
+    (o) => o.status !== 'approved' && o.status !== 'rejected' && o.status !== 'completed'
+  );
+
+  return (
+    <>
+      <h4 className="mb-3 text-sm font-medium">Order node licences</h4>
+      <form className="grid gap-4 md:grid-cols-2" onSubmit={submit}>
+        <Field label="Full name" htmlFor="node-name">
+          <Input
+            id="node-name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            autoComplete="name"
+            required
+          />
+        </Field>
+
+        <Field
+          label="Nodes"
+          htmlFor="node-count"
+          error={
+            nodeCount.trim() !== '' && !countValid
+              ? `Between 1 and ${STARW_MAX_NODES_PER_ORDER} whole nodes.`
+              : undefined
+          }
+          hint={
+            countValid
+              ? `${money(totalUsd, 'USD')} at ${money(STARW_NODE_PRICE_USD, 'USD')} per node, ${(count * STARW_ARSS_PER_NODE).toLocaleString('en-IE')} ARSS on settlement`
+              : `${money(STARW_NODE_PRICE_USD, 'USD')} per node.`
+          }
+        >
+          <Input
+            id="node-count"
+            type="number"
+            min="1"
+            max={STARW_MAX_NODES_PER_ORDER}
+            step="1"
+            value={nodeCount}
+            onChange={(e) => setNodeCount(e.target.value)}
+            aria-invalid={nodeCount.trim() !== '' && !countValid}
+            required
+          />
+        </Field>
+
+        <Field label="STR domain" htmlFor="node-domain" hint="Optional.">
+          <Input
+            id="node-domain"
+            value={strDomain}
+            onChange={(e) => setStrDomain(e.target.value)}
+            spellCheck={false}
+          />
+        </Field>
+
+        <Field
+          label="Wallet address"
+          htmlFor="node-wallet"
+          hint="Optional. Where node rewards should be directed."
+        >
+          <Input
+            id="node-wallet"
+            value={walletAddress}
+            onChange={(e) => setWalletAddress(e.target.value)}
+            spellCheck={false}
+          />
+        </Field>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="node-payment">Settlement</Label>
+          <select
+            id="node-payment"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            {STARW_PAYMENT_METHODS.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            The amount due, and where to send it, arrive with the payment instruction.
+          </p>
+        </div>
+
+        <div className="flex items-end md:col-span-2">
+          <Button type="submit" disabled={!canSubmit}>
+            <Server aria-hidden="true" />
+            {create.isPending ? 'Submitting...' : 'Order nodes'}
+          </Button>
+          <p className="ml-3 text-xs text-muted-foreground">
+            No node number is assigned until the order is settled.
+          </p>
+        </div>
+      </form>
+
+      <div className="mt-5">
+        <h4 className="mb-3 text-sm font-medium">Orders awaiting a decision</h4>
+        {starw.isLoading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : starw.isError ? (
+          <ErrorState
+            title="Could not load your orders"
+            error={starw.error}
+            onRetry={() => void starw.refetch()}
+          />
+        ) : openOrders.length === 0 ? (
+          <EmptyState
+            title="No open orders"
+            description="An order you submit is listed here until it is settled or rejected."
+          />
+        ) : (
+          <ul className="space-y-2">
+            {openOrders.map((order) => (
+              <li
+                key={order.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">
+                    {order.node_count} node{order.node_count === 1 ? '' : 's'}
+                  </p>
+                  <p className="tabular text-xs text-muted-foreground">
+                    {money(order.total_cost, 'USD')} · ordered {shortDate(order.created_at)}
+                  </p>
+                </div>
+                <StatusBadge status={order.status} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
   );
 }

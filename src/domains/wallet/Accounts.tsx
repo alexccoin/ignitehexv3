@@ -1,20 +1,29 @@
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { Banknote, Landmark, Link2, Loader2, Lock, Plus, Undo2 } from 'lucide-react';
+import { Banknote, Landmark, Link2, Loader2, Lock, Plus, Send, Undo2, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, Input, Label } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { StatusBadge } from '@/components/ui/status';
 import { TableWrap, Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { maskIban, money, shortDate } from '@/lib/format';
+import { useAuth } from '@/features/auth/AuthProvider';
 import {
+  IBAN_ACCOUNT_TYPES,
+  IBAN_CURRENCIES,
   useFiatWallets,
   useHeldTransfers,
   useIbanAccounts,
+  useIbanRequests,
   useLinkIbanToPool,
   useRefundHeldTransfer,
+  useRequestIbanAccount,
+  type IbanAccountType,
+  type IbanCurrency,
 } from './hooks';
 
 /**
@@ -215,6 +224,8 @@ function FiatWalletsCard() {
 function IbanAccountsCard() {
   const ibans = useIbanAccounts();
   const link = useLinkIbanToPool();
+  const requests = useIbanRequests();
+  const [formOpen, setFormOpen] = useState(false);
   const rows = ibans.data ?? [];
 
   const linkToPool = (ibanId: string) => {
@@ -234,18 +245,42 @@ function IbanAccountsCard() {
           <CardTitle>Bank accounts</CardTitle>
           <CardDescription>IBANs issued to you, and where their inbound funds land.</CardDescription>
         </div>
-        {/* TODO(server): opening an account needs a `create_iban_for_user(p_user_id,
-            p_country, p_currency, p_account_type)` RPC. v2 did this from the
-            browser — it generated the IBAN client-side and inserted the row
-            directly into `iban_accounts`, which lets any client mint itself a
-            bank account with whatever holder name and country it likes. Until
-            that function exists this stays disabled rather than being
-            reimplemented. */}
-        <Button size="sm" variant="secondary" disabled title="Not available yet — needs a server-side issuer">
-          <Plus />
-          Open an account
+        {/*
+          Opening an account is a REQUEST, not an instant issue, and the reason
+          is stated on screen rather than hidden here.
+
+          An IBAN must be unique and mod-97 correct, so the browser must not
+          invent one — and v2 did exactly that, generating the number in the
+          page and inserting straight into `iban_accounts`. That policy is still
+          open, so this screen deliberately does not use it.
+
+          TODO(server): `create_iban_for_user` and `create_ccoin_iban_for_user`
+          both exist and both fail on every call (23502 for the missing NOT NULL
+          `account_holder`/`account_type`; P0001 for the encryption trigger
+          ordering; PGRST203 for the ambiguous overload). Repair one of them,
+          drop `p_user_id` in favour of `auth.uid()`, and this button can issue
+          directly instead of raising a ticket. See F-071/F-072.
+        */}
+        <Button
+          size="sm"
+          variant={formOpen ? 'ghost' : 'secondary'}
+          onClick={() => setFormOpen((open) => !open)}
+          aria-expanded={formOpen}
+          aria-controls="iban-request-form"
+        >
+          {formOpen ? <X /> : <Plus />}
+          {formOpen ? 'Cancel' : 'Request an account'}
         </Button>
       </CardHeader>
+
+      {formOpen && (
+        <CardContent className="border-b border-border pb-6 pt-0">
+          <IbanRequestForm
+            heldCurrencies={rows.map((a) => a.currency)}
+            onDone={() => setFormOpen(false)}
+          />
+        </CardContent>
+      )}
       <CardContent className="pt-3">
         {ibans.isLoading ? (
           <div className="space-y-2">
@@ -258,7 +293,7 @@ function IbanAccountsCard() {
           <EmptyState
             icon={<Landmark className="size-5" />}
             title="No bank accounts"
-            description="An IBAN is issued once your account review completes."
+            description="Request one above. An operator issues the IBAN — it is not generated here."
           />
         ) : (
           <TableWrap>
@@ -320,6 +355,8 @@ function IbanAccountsCard() {
           </TableWrap>
         )}
 
+        <IbanRequestList query={requests} />
+
         {rows.some((a) => a.is_data_encrypted) && (
           <p className="pt-4 text-xs text-muted-foreground">
             Encrypted accounts are stored with their IBAN and BIC sealed. They are shown masked here
@@ -330,5 +367,223 @@ function IbanAccountsCard() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/* ------------------------------------------------------- account requests */
+
+/**
+ * Ask an operator to open an account.
+ *
+ * Nothing here decides a number. The member chooses a currency, a type and the
+ * name the account is held in; the IBAN, the BIC and the balance are the
+ * server's to write. The form says so plainly rather than implying an instant
+ * issue, because there is nothing instant behind it.
+ *
+ * One account per currency is not a UI preference either — `iban_accounts` has
+ * `UNIQUE (user_id, currency)`, so a currency the member already holds is
+ * disabled with the reason rather than offered and then refused by a 23505.
+ */
+function IbanRequestForm({
+  heldCurrencies,
+  onDone,
+}: {
+  heldCurrencies: string[];
+  onDone: () => void;
+}) {
+  const { user } = useAuth();
+  const request = useRequestIbanAccount();
+
+  const held = useMemo(() => new Set(heldCurrencies), [heldCurrencies]);
+  const firstFree = IBAN_CURRENCIES.find((c) => !held.has(c.currency));
+
+  const [currency, setCurrency] = useState<IbanCurrency>(
+    firstFree?.currency ?? IBAN_CURRENCIES[0].currency
+  );
+  const [accountType, setAccountType] = useState<IbanAccountType>('personal');
+  const [holder, setHolder] = useState('');
+
+  const metaName = user?.user_metadata?.full_name;
+  useEffect(() => {
+    if (typeof metaName === 'string' && metaName.trim()) {
+      setHolder((current) => current || metaName.trim());
+    }
+  }, [metaName]);
+
+  const selected = IBAN_CURRENCIES.find((c) => c.currency === currency) ?? IBAN_CURRENCIES[0];
+  const alreadyHeld = held.has(currency);
+  const holderValid = holder.trim().length > 1;
+  const canSubmit = holderValid && !alreadyHeld && !!user?.email && !request.isPending;
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!canSubmit) return;
+    request.mutate(
+      {
+        currency,
+        country: selected.country,
+        accountType,
+        accountHolder: holder.trim(),
+      },
+      {
+        onSuccess: () => {
+          toast.success('Request sent', {
+            description: 'It is now in the operations queue. You can follow it below.',
+          });
+          setHolder('');
+          onDone();
+        },
+        onError: (error: Error) =>
+          toast.error('The request was not sent', { description: error.message }),
+      }
+    );
+  };
+
+  return (
+    <form id="iban-request-form" className="space-y-4" onSubmit={submit}>
+      <div className="rounded-lg border border-info/20 bg-info/10 p-3 text-sm text-muted-foreground">
+        An IBAN is issued by the bank, not by this page. Sending this raises a request an operator
+        reviews and fulfils; no account exists and no number is reserved until they do.
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="iban-currency">Currency</Label>
+          <select
+            id="iban-currency"
+            value={currency}
+            onChange={(event) => setCurrency(event.target.value as IbanCurrency)}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+          >
+            {IBAN_CURRENCIES.map((option) => (
+              <option key={option.currency} value={option.currency}>
+                {option.label}
+                {held.has(option.currency) ? ' — already held' : ''}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            {alreadyHeld
+              ? 'You already hold an account in this currency. One account per currency is allowed.'
+              : `Issued in ${selected.country}.`}
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="iban-type">Account type</Label>
+          <select
+            id="iban-type"
+            value={accountType}
+            onChange={(event) => setAccountType(event.target.value as IbanAccountType)}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+          >
+            {IBAN_ACCOUNT_TYPES.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <Field
+          label="Account holder"
+          htmlFor="iban-holder"
+          error={holder.length > 0 && !holderValid ? 'Enter the full name.' : undefined}
+          hint="The name the account is opened in."
+        >
+          <Input
+            id="iban-holder"
+            value={holder}
+            onChange={(event) => setHolder(event.target.value)}
+            autoComplete="name"
+            aria-invalid={holder.length > 0 && !holderValid}
+          />
+        </Field>
+      </div>
+
+      {!user?.email && (
+        <p className="text-sm text-danger">
+          Your account has no email address, so an operator would have nowhere to reply. Add one
+          before requesting an account.
+        </p>
+      )}
+
+      <Button type="submit" size="sm" disabled={!canSubmit}>
+        {request.isPending ? <Loader2 className="animate-spin" /> : <Send />}
+        Send request
+      </Button>
+    </form>
+  );
+}
+
+/**
+ * The member's own requests, and where each one stands.
+ *
+ * A submit with no visible result is not finished: after sending, the request
+ * lands here with its status, so "did that do anything" has an answer on the
+ * same screen. Loading, error and empty are three different messages.
+ */
+function IbanRequestList({
+  query,
+}: {
+  query: ReturnType<typeof useIbanRequests>;
+}) {
+  const rows = query.data ?? [];
+
+  if (query.isLoading) {
+    return (
+      <div className="pt-6">
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
+  }
+
+  if (query.isError) {
+    return (
+      <div className="pt-6">
+        <ErrorState
+          title="Could not load your account requests"
+          error={query.error}
+          onRetry={() => void query.refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="pt-6">
+      <h3 className="mb-2 text-sm font-semibold">Account requests</h3>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Requests you have sent. An operator issues the IBAN; until then nothing is reserved.
+      </p>
+      <TableWrap>
+        <Table>
+          <THead>
+            <TR>
+              <TH>Sent</TH>
+              <TH>Request</TH>
+              <TH>Status</TH>
+              <TH>Closed</TH>
+            </TR>
+          </THead>
+          <TBody>
+            {rows.map((r) => (
+              <TR key={r.id}>
+                <TD className="whitespace-nowrap text-muted-foreground">{shortDate(r.created_at)}</TD>
+                <TD className="max-w-[28rem]">{r.error_details}</TD>
+                <TD>
+                  <StatusBadge status={r.status} />
+                </TD>
+                <TD className="whitespace-nowrap text-muted-foreground">
+                  {r.resolved_at ? shortDate(r.resolved_at) : '—'}
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
+      </TableWrap>
+    </div>
   );
 }

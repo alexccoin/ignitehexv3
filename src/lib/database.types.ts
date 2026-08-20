@@ -11672,6 +11672,15 @@ export type Database = {
         Args: { p_email: string }
         Returns: Json
       }
+      v2_member_close_ticket: { Args: { p_id: string }; Returns: Json }
+      v2_member_message_request: {
+        Args: { p_body: string; p_id: string; p_source: string }
+        Returns: Json
+      }
+      v2_member_set_connection: {
+        Args: { p_service: string; p_status: string }
+        Returns: Json
+      }
       v2_review_account: {
         Args: { p_account_id: string; p_notes?: string; p_status: string }
         Returns: Json

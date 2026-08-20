@@ -313,6 +313,42 @@ export interface ConnectionRequest {
  * str.dome username, the bank reference — rather than a new column per
  * property, which is what the jsonb column is for.
  */
+/**
+ * End a link, or withdraw a request that has not been decided.
+ *
+ * This is what F-055 was about. The own-update policy's USING clause admits
+ * only `not_connected` and `rejected` rows, so a member holding a `connected`
+ * or `requested` link matched zero rows on every attempt — and PostgREST
+ * answers that with `200 []` and no error, which is indistinguishable from
+ * success to any caller that only inspects `error`.
+ *
+ * `v2_member_set_connection` resolves the member from auth.uid() and permits
+ * only the transitions a member may make. `connected`, `pending_review` and
+ * `suspended` are refused with 42501 — verified, not assumed — so the guarantee
+ * this domain rests on is unchanged: a member cannot grant themselves a link.
+ *
+ * It changes a link record held by IgniteHeX. Nothing here contacts the far
+ * property, because no API to it exists on this deployment. The UI says so.
+ */
+export function useSetConnectionState() {
+  const userId = useUserId();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { service: ServiceKey; status: 'requested' | 'not_connected' }) => {
+      if (!userId) throw new Error('You must be signed in.');
+      const { error } = await supabase.rpc('v2_member_set_connection', {
+        p_service: input.service,
+        p_status: input.status,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['identity'] });
+    },
+  });
+}
+
 export function useRequestConnection() {
   const userId = useUserId();
   const qc = useQueryClient();

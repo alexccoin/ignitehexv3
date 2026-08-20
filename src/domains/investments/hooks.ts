@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { STR_REFERENCE_PRICE } from './constants';
+import {
+  SEED_LOCK_MONTHS,
+  SEED_SHARE_PRICE,
+  STARW_ARSS_PER_NODE,
+  STARW_NODE_PRICE_USD,
+  STR_REFERENCE_PRICE,
+} from './constants';
 
 /**
  * Data access for the investments domain.
@@ -301,6 +307,147 @@ export function useCreateIpoListingRequest() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ik.listings(userId ?? 'anon') }),
+  });
+}
+
+/* ================================================= seed applications == */
+
+/** Which of the two seed tables an application belongs in. */
+export type SeedRound = 'seed_str' | 'private_seed_str';
+
+export interface NewSeedApplication {
+  round: SeedRound;
+  fullName: string;
+  email: string;
+  tier: string;
+  /** What the member is committing, in USD. */
+  amountUsd: number;
+  /** Consents. All four must be true before the form will submit. */
+  termsAccepted: boolean;
+  ndaAccepted: boolean;
+  gdprAccepted: boolean;
+  riskAccepted: boolean;
+  /** Private round only — the subscription agreement carries an address. */
+  signatureFirstName: string | null;
+  signatureLastName: string | null;
+  phone: string | null;
+  streetAddress: string | null;
+  city: string | null;
+  stateProvince: string | null;
+  postalCode: string | null;
+  country: string | null;
+}
+
+/**
+ * Apply to a seed round.
+ *
+ * Three things this deliberately does not send, each because v2 sent it:
+ *
+ * - `status`. v2's form set it to 'approved' on insert, so the applicant
+ *   approved their own application. Here the column default ('pending') is
+ *   left to apply, and the reviewer moves it.
+ * - `credited_amount` / `str_shares_credited`. A client that can name the
+ *   number it is owed is a client that can mint.
+ * - `ip_address`. v2 wrote the literal '0.0.0.0'; the browser does not know
+ *   its own public address, and a field that is always the same value is not
+ *   an audit trail. It is left null (see TODO(server) below).
+ *
+ * The two columns that are sent under misleading names are sent that way on
+ * purpose: `investment_amount` holds STR units and `expected_return_rate`
+ * holds a share count, which is how `useMyCommitments` reads them back. Fixing
+ * the names is a migration, not a client change, and writing them any other
+ * way would make the member's own subscription list disagree with itself.
+ *
+ * TODO(server): the audit row in seed_str_audit_log / private_seed_str_audit_log
+ * and a truthful `ip_address` both still need a submit-seed-str-application
+ * edge function — a browser cannot produce either honestly. The application
+ * itself no longer waits on that function, because nothing it writes is
+ * privileged.
+ */
+export function useCreateSeedApplication() {
+  const userId = useUserId();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: NewSeedApplication) => {
+      const now = new Date().toISOString();
+
+      // The member's own consent, stamped by the member's own clock. It records
+      // that consent was given, not when — a trigger should overwrite with
+      // now() if the timestamp is ever relied on.
+      const consents = {
+        terms_accepted: input.termsAccepted,
+        terms_accepted_at: input.termsAccepted ? now : null,
+        nda_accepted: input.ndaAccepted,
+        nda_accepted_at: input.ndaAccepted ? now : null,
+        gdpr_accepted: input.gdprAccepted,
+        gdpr_accepted_at: input.gdprAccepted ? now : null,
+        risk_disclosure_accepted: input.riskAccepted,
+        risk_disclosure_accepted_at: input.riskAccepted ? now : null,
+      };
+
+      const strUnits = input.amountUsd / STR_REFERENCE_PRICE;
+      const shares = input.amountUsd / SEED_SHARE_PRICE;
+
+      // `.select('id')` on every branch: a write that RLS filters out answers
+      // 200 with an empty body and no error, so an unchecked insert would
+      // report success for a row that was never stored (F-055).
+      if (input.round === 'seed_str') {
+        const { data, error } = await supabase
+          .from('seed_str_applications')
+          .insert({
+            user_id: userId!,
+            full_name: input.fullName,
+            email: input.email,
+            investment_tier: input.tier,
+            investment_currency: 'STR',
+            investment_amount: strUnits,
+            str_backing_amount: strUnits,
+            expected_return_rate: shares,
+            lock_period_months: SEED_LOCK_MONTHS,
+            ...consents,
+          })
+          .select('id');
+        if (error) throw new Error(error.message);
+        if (!data || data.length === 0) {
+          throw new Error('The application was not stored. Nothing has been submitted.');
+        }
+        return data[0].id;
+      }
+
+      const { data, error } = await supabase
+        .from('private_seed_str_applications')
+        .insert({
+          user_id: userId!,
+          full_name: input.fullName,
+          email: input.email,
+          investment_tier: input.tier,
+          investment_amount: strUnits,
+          str_backing_amount: strUnits,
+          expected_return_rate: shares,
+          lock_period_months: SEED_LOCK_MONTHS,
+          acknowledgment_accepted: true,
+          signature_first_name: input.signatureFirstName,
+          signature_last_name: input.signatureLastName,
+          signature_date: now,
+          phone: input.phone,
+          street_address: input.streetAddress,
+          city: input.city,
+          state_province: input.stateProvince,
+          postal_code: input.postalCode,
+          country: input.country,
+          ...consents,
+        })
+        .select('id');
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        throw new Error('The application was not stored. Nothing has been submitted.');
+      }
+      return data[0].id;
+    },
+    // The new row is a commitment, so the member's subscription list is what
+    // has to refresh — that is where they will see it sitting at 'pending'.
+    onSuccess: () => qc.invalidateQueries({ queryKey: ik.commitments(userId ?? 'anon') }),
   });
 }
 
@@ -629,6 +776,67 @@ export function useStarwHoldings() {
   });
 }
 
+export interface NewStarwOrder {
+  nodeCount: number;
+  fullName: string;
+  emailAddress: string;
+  strDomain: string | null;
+  walletAddress: string | null;
+  paymentMethod: string;
+}
+
+/**
+ * Order StarW node licences.
+ *
+ * The order is a request at the published USD price, not a settlement: it
+ * assigns no node number, moves no balance and quotes no crypto amount.
+ * `btc_amount`, `eth_amount` and `crypto_prices_at_purchase` are left null on
+ * purpose — those are the columns v2 filled from a CoinGecko response fetched
+ * in the browser, with no guard against the fetch failing, so an order could be
+ * stored against a zero or NaN price. Whoever issues the payment instruction
+ * quotes the amount due.
+ *
+ * `status` is also left to its default. The table's INSERT policy checks only
+ * that the row belongs to the caller, so a member can currently post an order
+ * already marked 'approved'; this client does not, and the gap is recorded as
+ * a finding rather than papered over with a check here that a request could
+ * simply skip.
+ *
+ * The audit entry is already server-side: `log_starw_status_change` is a
+ * SECURITY DEFINER trigger that writes starw_interaction_history on insert.
+ */
+export function useCreateStarwOrder() {
+  const userId = useUserId();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: NewStarwOrder) => {
+      const { data, error } = await supabase
+        .from('starw_purchases')
+        .insert({
+          user_id: userId!,
+          full_name: input.fullName,
+          email_address: input.emailAddress,
+          str_domain: input.strDomain,
+          wallet_address: input.walletAddress,
+          node_count: input.nodeCount,
+          total_cost: input.nodeCount * STARW_NODE_PRICE_USD,
+          arss_bonus: `${(input.nodeCount * STARW_ARSS_PER_NODE).toLocaleString('en-IE')} ARSS`,
+          payment_method: input.paymentMethod,
+        })
+        .select('id');
+      if (error) throw new Error(error.message);
+      // An RLS-filtered write answers 200 with an empty body and no error, so
+      // the row count is the only honest success signal (F-055).
+      if (!data || data.length === 0) {
+        throw new Error('The order was not stored. Nothing has been submitted.');
+      }
+      return data[0].id;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ik.starw(userId ?? 'anon') }),
+  });
+}
+
 /* ============================================================= holdings == */
 
 /** Share balances and anything still vesting. */
@@ -747,6 +955,33 @@ export function useAdminAirdrop(status: string) {
         .from('airdrop_registrations')
         .select(
           'id, user_id, full_name, email_address, wallet_address, requested_amount, event_type, voucher_type, status, tokens_credited, credited_amount, created_at'
+        )
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (status !== 'all') q = q.eq('status', status);
+      return unwrap(await q) ?? [];
+    },
+  });
+}
+
+/**
+ * Node orders awaiting a decision.
+ *
+ * Read-only. Assigning the nodes an order paid for is `admin_assign_starw_nodes`,
+ * which is already a single server-side call; marking the order settled is a
+ * second, separate write, and doing both from the browser would leave a window
+ * where one had happened and the other had not. Until one function does both,
+ * this queue exists so the order is at least visible to the reviewer, with the
+ * holder's id to hand for the assignment form.
+ */
+export function useAdminStarwOrders(status: string) {
+  return useQuery({
+    queryKey: ik.admin('starw-orders', status),
+    queryFn: async () => {
+      let q = supabase
+        .from('starw_purchases')
+        .select(
+          'id, user_id, full_name, email_address, str_domain, wallet_address, node_count, total_cost, arss_bonus, payment_method, status, created_at'
         )
         .order('created_at', { ascending: false })
         .limit(200);

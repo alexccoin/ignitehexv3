@@ -196,6 +196,18 @@ export default function Referrals() {
           Until it exists this stays disabled — claiming from the browser would
           mean reading a balance, adding to it and writing it back, which is the
           pattern that lost credits in v2 at ~25 sites.
+
+          Checked, 2026-08-20, and the gap is wider than the missing RPC:
+
+            select count(*) from information_schema.tables
+             where table_schema='public' and table_name='referral_rewards';   -- 0
+            select proname from pg_proc join pg_namespace ...
+             where proname ilike '%referral%';                                -- 0 rows
+
+          There is no `referral_rewards` table and no referral function of any
+          name. The only referral state that exists is `referrals.reward_claimed`
+          / `reward_amount`, which is what the table above renders. Nothing was
+          invented to fill the gap; see F-076.
         */}
         <Section
           title="Releasing commission"

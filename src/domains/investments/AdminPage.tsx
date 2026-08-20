@@ -17,6 +17,7 @@ import {
   useAdminPrivateApplications,
   useAdminSeedApplications,
   useAdminStarwNodes,
+  useAdminStarwOrders,
   useAdminVouchers,
   useAssignStarwNodes,
   useCorrectVoucherAmount,
@@ -661,6 +662,98 @@ function AirdropQueue() {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const ORDER_FILTERS = ['pending', 'approved', 'rejected', 'all'] as const;
+
+/**
+ * Node orders members have placed.
+ *
+ * Read-only, and the decision buttons are absent rather than disabled because
+ * settling an order is two writes that have to be one: assigning the nodes
+ * (`admin_assign_starw_nodes`) and marking the order settled. Doing both from
+ * here would leave a window in which a member had paid, held nodes, and had an
+ * order still reading 'pending' - or worse, the reverse. The holder id is
+ * shown so it can be pasted into the assignment form above in the meantime.
+ */
+function NodeOrderQueue() {
+  const [filter, setFilter] = useState<string>('pending');
+  const orders = useAdminStarwOrders(filter);
+
+  return (
+    <Section
+      title="Node orders"
+      description="Placed by members. Settling one is still a manual two-step."
+      bodyClassName="p-0 pt-0"
+    >
+      <div className="p-5 pb-0">
+        <FilterPills
+          label="Order status"
+          options={ORDER_FILTERS}
+          value={filter}
+          onChange={setFilter}
+        />
+      </div>
+
+      {/* TODO(server): needs a settle-starw-order routine that, in one
+          statement, assigns the node numbers, marks the order settled and
+          records who did it. Until then this queue reports, and does not
+          decide. */}
+      <div className="px-5 pt-4">
+        <LockedAction
+          label="Settle order"
+          reason="Assigning the nodes and closing the order have to happen in one statement; until a routine does both, an order is settled from the assignment form above."
+        />
+      </div>
+
+      <Async
+        query={orders}
+        isEmpty={(rows) => rows.length === 0}
+        emptyTitle="No node orders"
+        emptyDescription="Nothing is waiting under this filter."
+        skeleton={
+          <div className="p-5">
+            <Skeleton className="h-40 w-full" />
+          </div>
+        }
+      >
+        {(rows) => (
+          <TableWrap>
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Ordered</TH>
+                  <TH>Member</TH>
+                  <TH className="text-right">Nodes</TH>
+                  <TH className="text-right">Value</TH>
+                  <TH>Settlement</TH>
+                  <TH>Status</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {rows.map((o) => (
+                  <TR key={o.id}>
+                    <TD className="text-muted-foreground">{shortDate(o.created_at)}</TD>
+                    <TD>
+                      <p className="font-medium">{o.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{o.email_address}</p>
+                      <p className="tabular text-xs text-muted-foreground">{o.user_id ?? '-'}</p>
+                    </TD>
+                    <TD className="tabular text-right">{o.node_count}</TD>
+                    <TD className="tabular text-right">{money(o.total_cost, 'USD')}</TD>
+                    <TD className="text-muted-foreground">{o.payment_method ?? '-'}</TD>
+                    <TD>
+                      <StatusBadge status={o.status} />
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </TableWrap>
+        )}
+      </Async>
+    </Section>
+  );
+}
+
 function NodesQueue() {
   const nodes = useAdminStarwNodes();
   const assign = useAssignStarwNodes();
@@ -792,6 +885,8 @@ function NodesQueue() {
           </div>
         </form>
       </Section>
+
+      <NodeOrderQueue />
 
       <Section title="Assigned nodes" bodyClassName="p-0 pt-0">
         <Async

@@ -174,7 +174,9 @@ function RegisterForm() {
         eventType,
         voucherId: voucherId || null,
       });
-      toast.success('Airdrop registration submitted for review.');
+      toast.success('Airdrop registration submitted for review.', {
+        description: 'It is listed below with its status. Nothing is credited until an operator approves it.',
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not register.');
     }

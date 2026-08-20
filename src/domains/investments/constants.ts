@@ -140,6 +140,41 @@ export const SAFE_TERMS = {
   referencePrice: 'USD 20.00 per share (indicative subscription unit)',
 };
 
+/* ---------------------------------------------------------- StarW nodes */
+
+/**
+ * StarW validator node licence price, in USD.
+ *
+ * $13,000 is the figure both v1 and v2 shipped (`PLATFORM_RULES.md` G.2), so
+ * it is restated here rather than re-derived. What is deliberately *not* here
+ * is any crypto conversion: v2 multiplied this by a CoinGecko quote fetched in
+ * the browser and wrote the resulting `btc_amount` / `eth_amount` onto the
+ * order, with no guard against a failed fetch returning zero. An order in v3
+ * carries a USD figure and a chosen settlement rail; the amount actually due
+ * is quoted by whoever issues the payment instruction.
+ */
+export const STARW_NODE_PRICE_USD = 13_000;
+
+/** ARSS granted per node on settlement. Shown as the order's stated bonus. */
+export const STARW_ARSS_PER_NODE = 1_000;
+
+/**
+ * Ceiling on a single order.
+ *
+ * `starw_nodes_node_number_check` only permits node numbers 1-100, so an order
+ * larger than that could never be assigned. The cap is repeated here so the
+ * form does not invite an order the assignment step cannot fulfil — the
+ * database still holds the real limit.
+ */
+export const STARW_MAX_NODES_PER_ORDER = 100;
+
+/** How a node order will be settled. Recorded as the member's stated intent. */
+export const STARW_PAYMENT_METHODS = [
+  { value: 'btc', label: 'Bitcoin' },
+  { value: 'eth', label: 'Ethereum' },
+  { value: 'bank', label: 'Bank transfer' },
+];
+
 /* ------------------------------------------------------------ IPO listing */
 
 /** Price at which existing holdings may be listed for the IPO, in USD. */
@@ -312,8 +347,7 @@ export const OFFERINGS: readonly Offering[] = [
     price: '$5.00 per share, STR at $0.0015',
     terms: `${SEED_LOCK_MONTHS}-month lock on STR, minimum $${SEED_MIN_USD.toLocaleString('en-IE')}`,
     href: '/investments/applications',
-    blocked:
-      'Applications are recorded server-side so the source address and audit entry cannot be forged.',
+    blocked: null,
     restricted: false,
   },
   {
@@ -323,8 +357,7 @@ export const OFFERINGS: readonly Offering[] = [
     price: '$5.00 per share, STR at $0.0015',
     terms: `${SEED_LOCK_MONTHS}-month lock, minimum $${SEED_MIN_USD.toLocaleString('en-IE')}`,
     href: '/investments/applications',
-    blocked:
-      'Applications are recorded server-side so the source address and audit entry cannot be forged.',
+    blocked: null,
     restricted: true,
   },
   {
@@ -378,7 +411,7 @@ export const OFFERINGS: readonly Offering[] = [
     price: 'Stage-priced',
     terms: 'wSTR rewards accrue per node',
     href: '/investments/positions',
-    blocked: 'Node purchases settle server-side before a node is assigned.',
+    blocked: null,
     restricted: false,
   },
   {

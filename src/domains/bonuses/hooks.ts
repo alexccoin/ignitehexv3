@@ -579,24 +579,51 @@ export interface NewAirdropRegistration {
   voucherId: string | null;
 }
 
-/** Register for the airdrop. Raises a pending request and credits nothing. */
+/**
+ * Register for the airdrop. Raises a pending request and credits nothing.
+ *
+ * `status: 'pending'`, and no `credited_amount` or `tokens_credited`, are sent
+ * explicitly rather than left to the column defaults — and that is worth
+ * spelling out, because the INSERT policy on this table is only
+ * `WITH CHECK (auth.uid() = user_id)`. It constrains *whose* row this is and
+ * nothing about its contents, so a hand-rolled request can arrive already
+ * marked approved and credited (confirmed, F-075). Compare `str_domains`, whose
+ * policy is `WITH CHECK (auth.uid() = user_id AND status = 'pending')`.
+ * No balance moves either way — the trigger on this table only writes history —
+ * but the admin queue and this member's own "credited" figure both believe it.
+ *
+ * `.select('id').single()` is the F-055 rule: an insert RLS refuses does raise,
+ * but reading the row back turns "wrote nothing" into a thrown error in every
+ * case rather than in most of them.
+ */
 export function useRegisterAirdrop() {
   const userId = useUserId();
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: NewAirdropRegistration) => {
-      const { error } = await supabase.from('airdrop_registrations').insert({
-        user_id: userId!,
-        full_name: input.fullName,
-        email_address: input.emailAddress,
-        wallet_address: input.walletAddress,
-        requested_amount: input.requestedAmount,
-        event_type: input.eventType,
-        voucher_id: input.voucherId,
-        status: 'pending',
-      });
+    mutationFn: async (input: NewAirdropRegistration): Promise<string> => {
+      if (!userId) throw new Error('Your session has expired. Sign in again and retry.');
+
+      const { data, error } = await supabase
+        .from('airdrop_registrations')
+        .insert({
+          user_id: userId,
+          full_name: input.fullName,
+          email_address: input.emailAddress,
+          wallet_address: input.walletAddress,
+          requested_amount: input.requestedAmount,
+          event_type: input.eventType,
+          voucher_id: input.voucherId,
+          status: 'pending',
+        })
+        .select('id')
+        .single();
+
       if (error) throw new Error(error.message);
+      if (!data) {
+        throw new Error('The registration was not recorded. Nothing has been sent for review.');
+      }
+      return data.id;
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: bk.airdrop(userId ?? 'anon') });
@@ -800,14 +827,36 @@ export interface PayoutAddresses {
   usdcNetwork: string | null;
 }
 
-/** Update where commission is paid. Touches addresses and nothing else. */
+/**
+ * Update where commission is paid. Touches addresses and nothing else.
+ *
+ * This write cannot currently succeed, and the screen says so rather than
+ * offering a form that quietly does nothing. `seed_str_affiliates` carries an
+ * INSERT policy for the owner and SELECT policies for the owner and for
+ * administrators — and no member UPDATE policy at all. PostgREST filters the
+ * statement to zero rows and answers `200 []` with `error === null`, so the
+ * previous version of this hook resolved successfully and the form toasted
+ * "Payout addresses updated." over an address that had not moved. Confirmed
+ * against a live stack: PATCH returned `[]`, and a re-read showed the original
+ * address. That is finding F-055, on the field that decides where money is
+ * sent. See F-078.
+ *
+ * The `.select('id')` and the zero-row check stay regardless of the UI, so if a
+ * policy is added later this starts working and, if it is not, it fails loudly.
+ *
+ * TODO(server): either a `USING (auth.uid() = user_id)` UPDATE policy scoped to
+ * the four address columns, or — better, since these are payout destinations —
+ * a `v2_member_set_affiliate_payout(p_usdt_address, p_usdt_network,
+ * p_usdc_address, p_usdc_network)` SECURITY DEFINER routine that resolves the
+ * affiliate from `auth.uid()` and can write nothing else.
+ */
 export function useUpdatePayoutAddresses() {
   const userId = useUserId();
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: PayoutAddresses) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('seed_str_affiliates')
         .update({
           usdt_address: input.usdtAddress,
@@ -815,8 +864,14 @@ export function useUpdatePayoutAddresses() {
           usdc_address: input.usdcAddress,
           usdc_network: input.usdcNetwork,
         })
-        .eq('id', input.affiliateId);
+        .eq('id', input.affiliateId)
+        .select('id');
       if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        throw new Error(
+          'The addresses were not changed. The database refused the update — there is no policy that lets a member edit their own affiliate payout addresses. Raise a support ticket to have them changed.'
+        );
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: bk.affiliate(userId ?? 'anon') }),
   });
@@ -1144,6 +1199,14 @@ export function useVoucherSweep() {
  *
  * Status only. There is no crediting branch here and there cannot be one: see
  * the TODO(server) on the approve control in Admin.tsx.
+ *
+ * The UPDATE is checked by what came back, not by the absence of an error. The
+ * only UPDATE policy on `airdrop_registrations` is
+ * `USING has_role(auth.uid(), 'admin')`, so a caller without the role is
+ * filtered to zero rows and PostgREST answers `200 []` with `error === null` —
+ * confirmed against a live project. Without the `.select('id')` below this
+ * function toasted "registration declined" at a member whose decision the
+ * database had refused, which is finding F-055 exactly.
  */
 export function useSetAirdropStatus() {
   const invalidate = useInvalidateAdmin();
@@ -1153,11 +1216,17 @@ export function useSetAirdropStatus() {
       if (isCreditingStatus(input.status)) {
         throw new Error('Airdrop tokens cannot be released from this screen.');
       }
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('airdrop_registrations')
         .update({ status: input.status, admin_notes: input.notes ?? null })
-        .eq('id', input.id);
+        .eq('id', input.id)
+        .select('id');
       if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        throw new Error(
+          'The registration was not changed. The database refused the update — check you still hold the admin role.'
+        );
+      }
     },
     onSuccess: invalidate,
   });

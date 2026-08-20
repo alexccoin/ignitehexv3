@@ -140,29 +140,19 @@ export function LockedAction({
   );
 }
 
-/**
- * Why the member cannot type a reply into the thread.
+/*
+ * MEMBER_REPLY_UNAVAILABLE and MEMBER_CLOSE_UNAVAILABLE used to live here.
  *
- * Writing one would mean the browser choosing `user_id` and `sender_role` on a
- * row in `v2_request_messages`. A client that picks `user_id` is a client that
- * can post into another member's thread, and a client that picks `sender_role`
- * is a client that can post a message rendered as coming from staff. Both of
- * the existing message writers — `v2_admin_message_request` and the operations
- * screen behind it — are administrator-only and check that server-side.
- */
-export const MEMBER_REPLY_UNAVAILABLE =
-  'Replies from this screen need a server routine that takes only the ticket id and reads who you are from your session. Writing the message here would mean this page choosing whose thread it lands in and whether it is labelled as coming from support. TODO(server): a v2_member_message_request(p_source text, p_id uuid, p_body text) SECURITY DEFINER function that resolves the member from auth.uid(), refuses a ticket they do not own, and stamps sender_role itself. Until then, reply to the email support sent you.';
-
-/**
- * Why the member cannot close their own ticket.
+ * Both are gone because the routines they asked for exist:
+ * `v2_member_message_request(p_source, p_id, p_body)` and
+ * `v2_member_close_ticket(p_id)`, migration 20260820150000. Each is SECURITY
+ * DEFINER, resolves the member from `auth.uid()`, refuses a row that member
+ * does not own with 42501, and writes the trust-bearing columns itself, so the
+ * reply box and the close button on TicketDetail are now real controls. The
+ * hooks that call them are `useReplyToTicket` and `useCloseTicket`.
  *
- * `member_support_tickets` grants UPDATE to administrators only. A member's
- * update is not rejected — it is filtered to zero rows and comes back 204 with
- * no error, so the button would light up green and change nothing. That is the
- * exact v2 failure this rebuild exists to remove.
+ * ASSIGN_UNAVAILABLE below is still unresolved and still describes a real gap.
  */
-export const MEMBER_CLOSE_UNAVAILABLE =
-  'Only support can change a ticket’s status. A close from this screen would be filtered out by the database and still report success, which is the failure this rebuild removed. TODO(server): a v2_member_close_ticket(p_id uuid) SECURITY DEFINER function scoped to auth.uid(), or a member UPDATE policy narrowed to status alone.';
 
 /**
  * Why staff cannot assign a ticket from the queue.

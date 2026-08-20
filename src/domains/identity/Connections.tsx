@@ -8,6 +8,7 @@ import {
   Plug,
   RefreshCw,
   ShieldCheck,
+  Unplug,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/AppShell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,12 +28,13 @@ import {
   useIdentityAccount,
   useOwnedDomains,
   useRequestConnection,
+  useSetConnectionState,
   useServiceConnections,
   type DomainLink,
   type IdentityAccount,
   type ServiceConnection,
 } from './hooks';
-import { Note, ServerActionPending, UnverifiableStatus } from './shared';
+import { Note, UnverifiableStatus } from './shared';
 
 /**
  * MULTILOGIN — one IgniteHeX identity, four sibling properties.
@@ -185,6 +187,7 @@ function PropertyCard({
   suggestions: string[];
 }) {
   const request = useRequestConnection();
+  const setState = useSetConnectionState();
   const status = connection?.status ?? 'not_connected';
   const frozen = !!connection && isMemberFrozen(status);
   const recorded = connection ? metadataString(connection.metadata, property.metadataKey) : null;
@@ -324,10 +327,38 @@ function PropertyCard({
             the local stack from every status. The full reasoning is stated once
             in the page footer rather than four times over.
           */}
-          <ServerActionPending
-            label="Disconnect this link"
-            todo="TODO(server): a member cannot end their own link. See the note at the foot of this page."
-          />
+          {/*
+            Offered only from the two states a member may leave. The function
+            refuses anything else, so this decides what to show — not what is
+            allowed. `suspended` is absent on purpose: an administrator put the
+            link there and only an administrator lifts it.
+          */}
+          {(status === 'connected' || status === 'requested') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              disabled={setState.isPending}
+              onClick={() =>
+                setState.mutate(
+                  { service: property.key, status: 'not_connected' },
+                  {
+                    onSuccess: () =>
+                      toast.success(
+                        status === 'connected'
+                          ? `${property.name} link ended.`
+                          : `Request to ${property.name} withdrawn.`
+                      ),
+                    onError: (e) =>
+                      toast.error(e instanceof Error ? e.message : 'Could not change the link'),
+                  }
+                )
+              }
+            >
+              {setState.isPending ? <Loader2 className="animate-spin" /> : <Unplug />}
+              {status === 'connected' ? 'Disconnect this link' : 'Withdraw this request'}
+            </Button>
+          )}
 
           {property.internalPath && (
             <Button variant="ghost" size="sm" className="w-full" asChild>

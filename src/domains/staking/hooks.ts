@@ -128,6 +128,7 @@ export const stakingKeys = {
   poolTemplates: (activeOnly: boolean) => [NS, 'pool-templates', activeOnly] as const,
   apyQuote: (amount: number, months: number) => [NS, 'apy-quote', amount, months] as const,
   unlockable: (poolIds: string[]) => [NS, 'unlockable', poolIds.join(',')] as const,
+  payouts: (userId: string) => [NS, 'payouts', userId] as const,
   adminRequests: (status: RequestFilter) => [NS, 'admin', 'requests', status] as const,
   adminDistributions: (limit: number) => [NS, 'admin', 'distributions', limit] as const,
 } as const;
@@ -330,14 +331,35 @@ export function useApyQuote(amount: number, durationMonths: number) {
 }
 
 /**
- * Which positions the server considers withdrawable.
+ * Which FOUNDER POSITIONS the server considers withdrawable.
  *
- * v2 answered this in the browser from `created_at` plus a hardcoded table of
- * days per token (`str: 90, ccos: 120, wstr: 180, ...`), which disagreed with
- * the `lock_end_date` the same app displayed two screens away. The server owns
- * the answer; the UI only renders it.
+ * Read the table name and take it literally. `is_withdrawal_available` is:
+ *
+ *     SELECT lock_end_date, btc_wallet_locked, withdrawal_executed
+ *       INTO lock_end, wallet_locked, withdrawal_done
+ *       FROM founder_positions
+ *      WHERE id = position_id;
+ *     RETURN lock_end IS NOT NULL AND now() >= lock_end
+ *            AND wallet_locked = true AND withdrawal_done = false;
+ *
+ * It answers about `founder_positions` and about nothing else. Handed a
+ * `user_staking_pools.id` the SELECT matches no row, `lock_end` stays NULL and
+ * it returns **false** — not an error, not a null, a confident "no". Confirmed:
+ * `select is_withdrawal_available(id), count(*) from user_staking_pools group
+ * by 1` → `f | 115`, and `select count(*) from user_staking_pools p join
+ * founder_positions f on f.id = p.id` → 0. Asked about a founder position with
+ * a past `lock_end_date` the same function returns true.
+ *
+ * StakingWithdrawals used to call this with pool ids, so every unstake control
+ * on that page was permanently disabled. See F-077. The name now says which
+ * kind of id it takes so it cannot be misapplied again.
+ *
+ * TODO(server): staking has no equivalent. It needs an
+ * `is_staking_withdrawal_available(p_pool_id uuid)` that reads
+ * `user_staking_pools` — lock_end_date, status, and whatever the unstake rules
+ * actually are — before a staking screen can put a server answer on screen.
  */
-export function useWithdrawalAvailability(poolIds: string[]) {
+export function useFounderWithdrawalAvailability(poolIds: string[]) {
   const sorted = [...poolIds].sort();
 
   return useQuery({
@@ -626,6 +648,148 @@ export function useRunRewardDistribution() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: stakingKeys.all });
       void qc.invalidateQueries({ queryKey: ['staking-pools'] });
+    },
+  });
+}
+
+/* ------------------------------------------------- external payout requests */
+
+/**
+ * The network an external payout leaves on.
+ *
+ * Taken from `ledger_anchor_chain` (chain_id 2025, name 'SourceLess', native
+ * symbol STR) rather than typed in from memory. That row also records
+ * `enabled = false` with the reason "Not live … rpc.sourceless.net and
+ * explorer.sourceless.net both return NXDOMAIN", which is the second reason a
+ * payout here is a request and not a transfer: there is nothing to broadcast to
+ * yet, so an operator settles it by hand.
+ */
+export const PAYOUT_NETWORK = 'SourceLess';
+
+/**
+ * Destination addresses this platform issues, and the external form it accepts.
+ *
+ * `user_profiles.str_wallet_address` is `str_` plus 32 lowercase hex — every
+ * one of the 8 sampled rows is exactly 36 characters in that shape. An EVM
+ * address is accepted too because a member may be withdrawing to one. This is a
+ * typo guard, not authorisation: the operator verifies the destination before
+ * anything is sent.
+ */
+export const PAYOUT_ADDRESS_PATTERN = /^(str_[0-9a-fA-F]{32}|0x[0-9a-fA-F]{40})$/;
+
+export type PayoutRequestRow = Pick<
+  Tables['guardian_withdrawal_requests']['Row'],
+  | 'id'
+  | 'asset_symbol'
+  | 'network'
+  | 'amount'
+  | 'destination_address'
+  | 'status'
+  | 'admin_notes'
+  | 'requested_at'
+  | 'window_expires_at'
+  | 'processed_at'
+>;
+
+/**
+ * The member's own external payout requests.
+ *
+ * `.eq('user_id', …)` is a view filter, not the access control: the table's
+ * SELECT policy is already `USING (user_id = auth.uid())`, but administrators
+ * hold a second `FOR ALL` policy, and without the filter this member-facing
+ * panel would list the whole platform's payouts to anyone who is also staff.
+ */
+export function useMyPayoutRequests() {
+  const userId = useUserId();
+
+  return useQuery({
+    queryKey: stakingKeys.payouts(userId ?? 'anon'),
+    enabled: !!userId,
+    queryFn: async (): Promise<PayoutRequestRow[]> =>
+      unwrap(
+        await supabase
+          .from('guardian_withdrawal_requests')
+          .select(
+            'id, asset_symbol, network, amount, destination_address, status, admin_notes, requested_at, window_expires_at, processed_at'
+          )
+          .eq('user_id', userId!)
+          .order('requested_at', { ascending: false })
+          .limit(100)
+      ) ?? [],
+  });
+}
+
+export interface PayoutRequestInput {
+  /** Upper-case token symbol. One request is one asset; amounts are never merged. */
+  assetSymbol: string;
+  amount: number;
+  destinationAddress: string;
+}
+
+/**
+ * Ask for released tokens to be paid out to an external wallet.
+ *
+ * This books a row and moves nothing, which is the only shape a client is
+ * allowed to have here. Three things make it safe to do from the browser, and
+ * all three were checked against a live project rather than assumed:
+ *
+ *  - `WITH CHECK (user_id = auth.uid())` refuses a request booked in somebody
+ *    else's name — 403 / 42501, tested.
+ *  - There is no member UPDATE or DELETE policy, so a member cannot approve,
+ *    complete or withdraw their own request. Both come back `200 []`, tested.
+ *  - `status`, `requested_at` and the 96-hour `window_expires_at` are left to
+ *    their column defaults, so the clock is the server's and not the browser's.
+ *
+ * `withdrawal_requests` is deliberately NOT the table used, despite the name.
+ * It is the founder-position BTC table, its UPDATE policy is
+ * `USING (auth.uid() = user_id)` with no admin policy at all, and a member can
+ * therefore set their own row to `approved` and write a `transaction_hash`
+ * while no administrator can even read it. Confirmed; see F-074.
+ *
+ * TODO(server): there is still no database-side check that the amount is
+ * covered — a member may ask for more than they hold and the INSERT succeeds.
+ * The screen says so plainly rather than implying the figure is enforced. The
+ * narrowest fix is a BEFORE INSERT trigger on `guardian_withdrawal_requests`
+ * that rejects an amount above the caller's released balance for that asset;
+ * the settlement itself needs the payout routine described on the queue.
+ */
+export function useRequestExternalPayout() {
+  const userId = useUserId();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: PayoutRequestInput): Promise<string> => {
+      if (!userId) throw new Error('Your session has expired. Sign in again and retry.');
+
+      const destination = input.destinationAddress.trim();
+      if (!PAYOUT_ADDRESS_PATTERN.test(destination)) {
+        throw new Error('That destination address is not in a form this platform recognises.');
+      }
+      if (!Number.isFinite(input.amount) || input.amount <= 0) {
+        throw new Error('Enter an amount greater than zero.');
+      }
+
+      // `.select('id').single()` rather than a bare insert: a write that
+      // returned no row did not happen, whatever the absence of an error
+      // suggests. This is the F-055 rule applied to the happy path too.
+      const { data, error } = await supabase
+        .from('guardian_withdrawal_requests')
+        .insert({
+          user_id: userId,
+          asset_symbol: input.assetSymbol,
+          network: PAYOUT_NETWORK,
+          amount: input.amount,
+          destination_address: destination,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error('The request was not recorded. Nothing has been sent for review.');
+      return data.id;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: stakingKeys.payouts(userId ?? 'anon') });
     },
   });
 }

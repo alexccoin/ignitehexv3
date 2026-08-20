@@ -52,6 +52,7 @@ const failed = <T,>(message: string): QueryState<T> => ({
 let fiatWallets: QueryState<unknown[]>;
 let ibanAccounts: QueryState<unknown[]>;
 let heldTransfers: QueryState<unknown[]>;
+let ibanRequests: QueryState<unknown[]>;
 
 const mutation = () => ({ mutate: vi.fn(), isPending: false, variables: undefined });
 
@@ -59,8 +60,16 @@ vi.mock('./hooks', () => ({
   useFiatWallets: () => fiatWallets,
   useIbanAccounts: () => ibanAccounts,
   useHeldTransfers: () => heldTransfers,
+  useIbanRequests: () => ibanRequests,
   useLinkIbanToPool: () => mutation(),
   useRefundHeldTransfer: () => mutation(),
+  useRequestIbanAccount: () => mutation(),
+  IBAN_CURRENCIES: [{ currency: 'EUR', country: 'BG', label: 'Euro · issued in Bulgaria' }],
+  IBAN_ACCOUNT_TYPES: ['personal', 'business'],
+}));
+
+vi.mock('@/features/auth/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'u-1', email: 'member@example.test', user_metadata: {} } }),
 }));
 
 import WalletAccounts from './Accounts';
@@ -108,6 +117,7 @@ beforeEach(() => {
   fiatWallets = idle([]);
   ibanAccounts = idle([]);
   heldTransfers = idle([]);
+  ibanRequests = idle([]);
 });
 
 /* ------------------------------------------------------------------ */

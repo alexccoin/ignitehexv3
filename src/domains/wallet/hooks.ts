@@ -59,6 +59,7 @@ export const wk = {
   activity: (userId: string) => ['wallet', 'activity', userId] as const,
   held: (userId: string) => ['wallet', 'held-transfers', userId] as const,
   ibans: (userId: string) => ['wallet', 'ibans', userId] as const,
+  ibanRequests: (userId: string) => ['wallet', 'iban-requests', userId] as const,
   fiatWallets: (userId: string) => ['wallet', 'fiat-wallets', userId] as const,
 } as const;
 
@@ -383,6 +384,162 @@ export function useLinkIbanToPool() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: wk.ibans(userId) });
       void qc.invalidateQueries({ queryKey: qk.ibans(userId) });
+    },
+  });
+}
+
+/* ------------------------------------------------------- opening an account */
+
+/**
+ * Currencies the platform issues an IBAN in, and the country each one is
+ * issued from.
+ *
+ * Not invented here: this is the mapping `create_ccoin_iban_for_user` already
+ * holds in the database (`CASE p_currency WHEN 'EUR' THEN 'BG' WHEN 'CHF' THEN
+ * 'CH' WHEN 'GBP' THEN 'GB' ELSE RAISE`). Offering a fourth currency would
+ * produce a request no operator could fulfil.
+ */
+export const IBAN_CURRENCIES = [
+  { currency: 'EUR', country: 'BG', label: 'Euro · issued in Bulgaria' },
+  { currency: 'CHF', country: 'CH', label: 'Swiss franc · issued in Switzerland' },
+  { currency: 'GBP', country: 'GB', label: 'Pound sterling · issued in the United Kingdom' },
+] as const;
+
+export type IbanCurrency = (typeof IBAN_CURRENCIES)[number]['currency'];
+
+export const IBAN_ACCOUNT_TYPES = ['personal', 'business'] as const;
+export type IbanAccountType = (typeof IBAN_ACCOUNT_TYPES)[number];
+
+/**
+ * The marker that turns a support ticket into an IBAN request.
+ *
+ * `member_support_tickets` is the request channel the operations inbox already
+ * reads (`operations/requestSources.ts`), and it is the only member-writable
+ * table on this path whose UPDATE policy is admin-only — so a member can raise
+ * a request and cannot decide it. The marker is a prefix rather than a new
+ * column because adding a column is a migration, and it is filtered with
+ * `ilike` server-side so the member's other tickets never reach this screen.
+ */
+export const IBAN_REQUEST_PREFIX = 'IBAN account request';
+
+export type IbanRequest = Pick<
+  Tables['member_support_tickets']['Row'],
+  'id' | 'status' | 'error_details' | 'created_at' | 'updated_at' | 'resolved_at'
+>;
+
+/**
+ * The member's own outstanding IBAN requests.
+ *
+ * `.eq('user_id', …)` is a view filter, not the access control — RLS already
+ * scopes a member to their own rows, but administrators hold a second
+ * select-all policy on this table and without the filter a signed-in operator
+ * would see the whole platform's requests on their own accounts page.
+ *
+ * `admin_notes` is deliberately not selected: it is the note staff write for
+ * each other, it routinely names other people, and the same rule is applied in
+ * `domains/support/hooks.ts`.
+ */
+export function useIbanRequests() {
+  const userId = useUserId();
+  return useQuery({
+    queryKey: wk.ibanRequests(userId ?? 'anon'),
+    enabled: !!userId,
+    queryFn: async (): Promise<IbanRequest[]> =>
+      unwrap(
+        await supabase
+          .from('member_support_tickets')
+          .select('id, status, error_details, created_at, updated_at, resolved_at')
+          .eq('user_id', userId!)
+          .eq('category', 'banking')
+          .ilike('error_details', `${IBAN_REQUEST_PREFIX}%`)
+          .order('created_at', { ascending: false })
+          .limit(50)
+      ) ?? [],
+  });
+}
+
+export interface IbanRequestInput {
+  currency: IbanCurrency;
+  country: string;
+  accountType: IbanAccountType;
+  accountHolder: string;
+}
+
+/**
+ * Ask an operator to open a bank account.
+ *
+ * This is a REQUEST and not an issue, and that is a finding rather than a
+ * preference. An IBAN has to be unique and mod-97 correct, so a browser must
+ * not invent one — and every server-side issuer this database has is broken:
+ *
+ *   create_iban_for_user(uuid,text) and (uuid,text,text,text)
+ *     Both raise 23502 on every call. The INSERT omits `account_holder` and
+ *     `account_type`, which are NOT NULL. Confirmed against a live project.
+ *   create_ccoin_iban_for_user(uuid,text,text)
+ *     Raises P0001 'Security violation: IBAN/BIC must be encrypted'. It writes
+ *     is_data_encrypted=true with NULL encrypted_iban/encrypted_bic, and
+ *     `trg_iban_accounts_security` fires before `trigger_auto_encrypt_iban_data`
+ *     (triggers run in name order), so validation sees the unencrypted row.
+ *   create_ccoin_iban_for_user(uuid,text)
+ *     Unreachable over PostgREST: PGRST203, ambiguous with the 3-arg overload.
+ *
+ * All four also take `p_user_id` and are SECURITY DEFINER with no
+ * `auth.uid() = p_user_id` check, so wiring the browser to any of them would
+ * hand every member an account-minting primitive for other people's ids. See
+ * F-071/F-072.
+ *
+ * What is NOT done here is the thing v2 did: insert into `iban_accounts`
+ * directly. That policy is still open (`WITH CHECK (auth.uid() = user_id)` and
+ * nothing else), and it lets a client choose its own IBAN, its own holder name
+ * and its own `balance` — confirmed, F-073. This path deliberately does not use it.
+ */
+export function useRequestIbanAccount() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (input: IbanRequestInput): Promise<string> => {
+      const userId = user?.id;
+      const email = user?.email;
+      if (!userId) throw new Error('Your session has expired. Sign in again and retry.');
+      // user_email is NOT NULL. Sending a placeholder would give an operator an
+      // address to reply to that nobody reads.
+      if (!email) {
+        throw new Error('Your account has no email address, so a request cannot be raised.');
+      }
+
+      const holder = input.accountHolder.trim();
+      if (holder.length < 2) throw new Error('Enter the name the account should be held in.');
+
+      const details =
+        `${IBAN_REQUEST_PREFIX} — ${input.currency} ${input.accountType} account, ` +
+        `issued in ${input.country}, held in the name of ${holder}.`;
+
+      // `.select('id').single()` rather than a bare insert: an insert RLS
+      // refuses does raise, but reading the row back turns "wrote nothing" into
+      // a thrown error in every case instead of most of them (F-055).
+      const { data, error } = await supabase
+        .from('member_support_tickets')
+        .insert({
+          user_id: userId,
+          user_email: email,
+          full_name: holder,
+          category: 'banking',
+          severity: 'medium',
+          error_details: details,
+          status: 'pending',
+        })
+        .select('id')
+        .single();
+
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error('The request was not recorded. Nothing has been sent.');
+      return data.id;
+    },
+    onSuccess: () => {
+      const id = user?.id ?? 'anon';
+      void qc.invalidateQueries({ queryKey: wk.ibanRequests(id) });
+      void qc.invalidateQueries({ queryKey: wk.ibans(id) });
     },
   });
 }

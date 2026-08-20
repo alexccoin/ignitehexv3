@@ -31,11 +31,19 @@ import type { RequestSource } from '@/domains/operations/requestSources';
  *     A member sees *that* support replied, never *who*.
  *
  *  3. A write with no server routine behind it is not performed. The member
- *     reply and the member-side close both need a `user_id`/`sender_role` the
- *     browser would be choosing, or an UPDATE that RLS filters to zero rows and
- *     returns 204 with no error — v2's success-toast-for-nothing bug exactly.
- *     Those controls render disabled with the reason attached; see
- *     MEMBER_REPLY_UNAVAILABLE and MEMBER_CLOSE_UNAVAILABLE in ./shared.
+ *     reply and the member-side close both needed a `user_id`/`sender_role` the
+ *     browser would have been choosing, or an UPDATE that RLS filters to zero
+ *     rows and returns 200 with no error — v2's success-toast-for-nothing bug
+ *     exactly. Both now have a routine: `v2_member_message_request` and
+ *     `v2_member_close_ticket` (mig 20260820150000), each SECURITY DEFINER,
+ *     each resolving the member from `auth.uid()` and refusing somebody else's
+ *     row with 42501. The browser sends a ticket id and a body and nothing
+ *     else, and — rule 4 — reads the result rather than assuming it.
+ *
+ *  4. Every write is checked by what came back, not by the absence of an error.
+ *     A refused UPDATE is `200 []`, and a routine that returned nothing is a
+ *     write that did not happen. Each mutation below asserts on the returned
+ *     row and throws a sentence the member can act on if it is missing.
  */
 
 type Tables = Database['public']['Tables'];
@@ -195,20 +203,18 @@ export function useMyTicket(id: string | undefined) {
 /**
  * The threaded conversation on one request.
  *
- * `v2_request_messages` is not defined in any migration in the repository, so
- * its RLS policy could not be read and has to be treated as unverified. Two
- * things follow, and both are deliberate:
+ * The table's SELECT policy has since been read and exercised: `Members read
+ * their request messages` is `USING (user_id = auth.uid())`, alongside a
+ * FOR ALL policy for administrators. Asking for another member's thread returns
+ * `[]`, confirmed against a live project. The two containments below stay
+ * anyway, because neither costs anything and both survive a policy edit:
  *
  *  - The query never runs speculatively. `enabled` is driven by the caller, and
  *    the member-facing caller only enables it once the ticket itself has come
  *    back from an RLS-scoped read — so an id the member does not own produces
  *    no thread request at all, whatever the message table's policy says.
  *  - The selected columns contain no identity, so even a permissive policy
- *    cannot leak a name, an email or a user id through this screen.
- *
- * TODO(server): confirm `v2_request_messages` restricts SELECT to
- * `user_id = auth.uid()` OR admin. If it does not, the containment above is the
- * only thing standing between a crafted request and another member's thread.
+ *    could not leak a name, an email or a user id through this screen.
  */
 export function useTicketThread(
   source: string | null | undefined,
@@ -330,6 +336,121 @@ export function useOpenTicket() {
       if (error) throw new Error(error.message);
       if (!data) throw new Error('The ticket was not created. Nothing has been sent.');
       return data.id;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sk.all });
+    },
+  });
+}
+
+/**
+ * The most a reply is allowed to be.
+ *
+ * `v2_member_message_request` raises 22001 above 5000 characters. The number is
+ * repeated here so the textarea can stop at the limit and show a counter rather
+ * than let the member write an essay and then lose it to a server error.
+ */
+export const REPLY_MAX_LENGTH = 5000;
+
+/**
+ * Read a jsonb RPC result as an object without asserting it is one.
+ *
+ * The generated type for these routines is `Json`, which is a union that
+ * includes null, a string and an array. Narrowing rather than casting is what
+ * makes the "did the write actually happen" check below real: a routine that
+ * returned null reaches the `throw`, it does not reach a property access on
+ * something that is not there.
+ */
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * Reply to support on your own ticket.
+ *
+ * Everything that decides whose thread this lands in and who it appears to be
+ * from is chosen by the database. The browser sends a source, a ticket id and
+ * some text; `v2_member_message_request` resolves the member from `auth.uid()`,
+ * refuses a ticket that member does not own with 42501, and writes `user_id`,
+ * `sender_id` and `sender_role` itself. The member INSERT policy that used to
+ * sit on `v2_request_messages` was dropped in the same migration — it pinned
+ * the sender but never checked the thread, so it let a member post into another
+ * member's ticket, which an administrator working the queue would then read.
+ *
+ * The returned message id is checked. A routine that returns nothing has not
+ * written anything, and telling the member their reply is on its way when it is
+ * not is the failure this rebuild exists to remove.
+ */
+export function useReplyToTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { ticketId: string; body: string }): Promise<void> => {
+      const body = input.body.trim();
+      if (!body) throw new Error('Write something before sending.');
+      if (body.length > REPLY_MAX_LENGTH) {
+        throw new Error(`A reply can be at most ${REPLY_MAX_LENGTH} characters.`);
+      }
+
+      const { data, error } = await supabase.rpc('v2_member_message_request', {
+        p_source: MEMBER_TICKET_SOURCE,
+        p_id: input.ticketId,
+        p_body: body,
+      });
+      if (error) throw new Error(error.message);
+
+      const message = asRecord(data);
+      if (typeof message?.id !== 'string') {
+        throw new Error('The reply was not saved. Nothing has been sent to support.');
+      }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sk.all });
+    },
+  });
+}
+
+/** What `v2_member_close_ticket` reports back. */
+export interface CloseTicketResult {
+  status: string;
+  /** False when the ticket was already closed — the call succeeded and did nothing. */
+  changed: boolean;
+}
+
+/**
+ * Close your own ticket.
+ *
+ * A direct `UPDATE` from the browser is the exact shape of finding F-055: there
+ * is no member UPDATE policy on `member_support_tickets`, so PostgREST returns
+ * `200 []` with no error and the UI congratulates the member on a change that
+ * never happened. `v2_member_close_ticket` is SECURITY DEFINER, scoped to
+ * `auth.uid()`, and its UPDATE statement can set `status` and nothing else —
+ * `resolved_by` and `resolved_at` stay untouched because a ticket the member
+ * closed was not resolved by a member of staff.
+ *
+ * The status that comes back is read rather than trusted: anything other than
+ * `closed` is reported as a failure, so a routine that silently declined would
+ * surface as one.
+ */
+export function useCloseTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ticketId: string): Promise<CloseTicketResult> => {
+      const { data, error } = await supabase.rpc('v2_member_close_ticket', {
+        p_id: ticketId,
+      });
+      if (error) throw new Error(error.message);
+
+      const row = asRecord(data);
+      const status = typeof row?.status === 'string' ? row.status : null;
+      if (!status) {
+        throw new Error('The ticket was not closed. Nothing on it has changed.');
+      }
+      if (status.toLowerCase() !== 'closed') {
+        throw new Error(`The ticket was not closed — it is still ${status.replace(/_/g, ' ')}.`);
+      }
+      return { status, changed: row?.changed === true };
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: sk.all });

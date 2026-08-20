@@ -4,6 +4,7 @@ import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Label } from '@/components/ui/input';
 import { EVM_ADDRESS, PAYOUT_NETWORKS } from './constants';
+import { LockedAction } from './shared';
 import { useUpdatePayoutAddresses, type AffiliateRow } from './hooks';
 
 /**
@@ -13,7 +14,27 @@ import { useUpdatePayoutAddresses, type AffiliateRow } from './hooks';
  * whole affiliate row in component state and wrote it back on save, so an edit
  * to a payout address also re-wrote the status and the counters from whatever
  * the browser happened to be holding.
+ *
+ * Editing is currently shown as unavailable, with the reason on screen. That is
+ * not caution: `seed_str_affiliates` has no member UPDATE policy, so the write
+ * is filtered to zero rows and PostgREST answers `200 []` with no error —
+ * confirmed by PATCHing a real row as its owner and re-reading it unchanged.
+ * The form was therefore telling affiliates their payout address had moved when
+ * it had not. See the TODO(server) on `useUpdatePayoutAddresses` and F-078.
+ *
+ * The form itself is left intact below the guard so that adding the policy or
+ * the routine makes it live again by flipping one constant.
  */
+
+/**
+ * Whether a member may edit their own payout addresses.
+ *
+ * False until `seed_str_affiliates` gains a member UPDATE policy or a
+ * `v2_member_set_affiliate_payout` routine exists. The hook checks the returned
+ * rows independently, so flipping this to true cannot resurrect a silent
+ * success — it would surface a real error instead.
+ */
+const MEMBER_MAY_EDIT_PAYOUT_ADDRESSES = false;
 export function PayoutAddressForm({ affiliate }: { affiliate: AffiliateRow }) {
   const update = useUpdatePayoutAddresses();
 
@@ -59,9 +80,11 @@ export function PayoutAddressForm({ affiliate }: { affiliate: AffiliateRow }) {
       <div className="space-y-3 rounded-md border border-border p-4">
         <div className="flex items-start justify-between gap-4">
           <p className="text-sm font-medium">Payout addresses</p>
-          <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
+          {MEMBER_MAY_EDIT_PAYOUT_ADDRESSES && (
+            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+          )}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-0.5">
@@ -77,6 +100,14 @@ export function PayoutAddressForm({ affiliate }: { affiliate: AffiliateRow }) {
             <p className="break-all font-mono text-xs">{affiliate.usdc_address ?? 'Not set'}</p>
           </div>
         </div>
+
+        {!MEMBER_MAY_EDIT_PAYOUT_ADDRESSES && (
+          <LockedAction
+            className="border-t border-border pt-3"
+            label="Edit payout addresses"
+            reason="Changing these needs an operator. The database has no policy that lets a member edit their own affiliate payout addresses, so an edit made here would be discarded without an error — raise a support ticket instead."
+          />
+        )}
       </div>
     );
   }
